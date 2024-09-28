@@ -1,5 +1,5 @@
 ---
-- hosts: all
+- hosts: web_servers
   become: true
   become_user: root
   vars:
@@ -63,4 +63,3 @@
       community.general.ufw:
         state: enabled
         default: deny
-

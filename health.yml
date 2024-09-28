@@ -1,18 +1,9 @@
 ---
-- hosts: web_servers
-  become: yes
-  become_user: root
+- hosts: all
+  gather_facts: False
+  connection: local
+
   tasks:
-    - name: Update apt package cache
-      apt:
-        update_cache: yes
-
-    - name: Install Apache
-      apt:
-        name: apache2
-        state: present
-
-    - name: Start Apache service
-      service:
-        name: apache2
-        state: started
+    - name: ping
+      shell: ping -c 1 -w 2 8.8.8.8
+      ignore_errors: true
