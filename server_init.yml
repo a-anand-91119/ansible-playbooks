@@ -3,7 +3,7 @@
   become: true
   become_user: root
   vars:
-    new_user: admin
+    created_username: admin
   
   tasks:
     - name: Install aptitude
