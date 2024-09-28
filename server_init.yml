@@ -66,9 +66,8 @@
         state: present
       notify: Restart SSH Service
 
-
-handlers:
-  - name: Restart SSH Service
-    service:
-      name: ssh
-      state: restarted
+  handlers:
+    - name: Restart SSH Service
+      service:
+        name: ssh
+        state: restarted
