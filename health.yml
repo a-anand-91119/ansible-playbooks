@@ -1,6 +1,7 @@
 ---
 - hosts: web_servers
   become: true
+  become_method: sudo
   tasks:
     - name: Print OS Info
       ansible.builtin.package:
