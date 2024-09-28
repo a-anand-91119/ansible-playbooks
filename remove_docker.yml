@@ -3,7 +3,7 @@
   become: true
 
   tasks:
-    - name: Uninstall conflicting packages
+    - name: Uninstall docker packages
       ansible.builtin.shell: |
         for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do 
           apt-get remove -y $pkg; 
