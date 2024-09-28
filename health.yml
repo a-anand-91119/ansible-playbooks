@@ -7,13 +7,16 @@
     - name: Update apt package cache
       apt:
         update_cache: yes
+      become: yes 
 
     - name: Install Apache
       apt:
         name: apache2
         state: present
+      become: yes 
 
     - name: Start Apache service
       service:
         name: apache2
         state: started
+      become: yes 
