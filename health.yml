@@ -1,8 +1,6 @@
 ---
 - hosts: web_servers
   become: yes
-  remote_user: ubuntu
-  become_method: sudo
   tasks:
     - name: Print OS Info
       ansible.builtin.package:
