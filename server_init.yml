@@ -27,6 +27,7 @@
         groups: sudo
         append: true
         create_home: true
+        shell: /bin/bash
 
     - name: Set authorized key for remote user
       ansible.posix.authorized_key:
