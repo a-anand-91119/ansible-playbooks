@@ -1,6 +1,8 @@
 ---
 - hosts: web_servers
   become: yes
+  become_method: su
+  become_flags: '-s /bin/sh'
   tasks:
     - name: Print OS Info
       ansible.builtin.package:
