@@ -4,6 +4,16 @@
   become_method: su
   become_flags: '-s /bin/sh'
   tasks:
-    - name: Print OS Info
-      ansible.builtin.package:
+    - name: Update apt package cache
+      apt:
+        update_cache: yes
+
+    - name: Install Apache
+      apt:
         name: apache2
+        state: present
+
+    - name: Start Apache service
+      service:
+        name: apache2
+        state: started
