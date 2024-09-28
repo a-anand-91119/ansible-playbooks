@@ -6,12 +6,6 @@
     created_username: admin
   
   tasks:
-    - name: Install aptitude
-      apt:
-        name: aptitude
-        state: latest
-        update_cache: true
-    
     - name: Setup passwordless sudo
       lineinfile:
         path: /etc/sudoers
@@ -63,3 +57,18 @@
       community.general.ufw:
         state: enabled
         default: deny
+    
+    - name: Disable password-based SSH login
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?PasswordAuthentication'
+        line: 'PasswordAuthentication no'
+        state: present
+      notify: Restart SSH Service
+
+
+handlers:
+  - name: Restart SSH Service
+    service:
+      name: ssh
+      state: restarted
