@@ -1,0 +1,69 @@
+---
+- hosts: all
+  become: true
+  
+  tasks:
+    - name: Install required system packages
+      apt:
+        pkg:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+        state: latest
+        update_cache: true
+
+    - name: Add Docker GPG apt Key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker Repository
+      apt_repository:
+        repo: deb https://download.docker.com/linux/ubuntu focal stable
+        state: present
+
+    - name: Update apt and install docker
+      apt:
+        pkg:
+          - docker-ce 
+          - docker-ce-cli 
+          - containerd.io 
+          - docker-buildx-plugin 
+          - docker-compose-plugin
+        state: latest
+        update_cache: true
+
+    - name: Run Hello World docker container
+      docker_container:
+        name: hello-world-test
+        image: hello-world
+        state: started
+        auto_remove: true
+        detach: false
+        cleanup: yes
+    
+    - name: Check if the Hello World container ran successfully
+      command: docker ps -a --filter "name=hello-world-test" --filter "status=exited" --format "{{.Names}}"
+      register: container_output
+    
+    - name: Ensure Hello World container was run and removed successfully
+      assert:
+        that:
+          - "'hello-world-test' not in container_output.stdout"
+        fail_msg: "Hello World container failed to run or was not removed."
+        success_msg: "Hello World container ran successfully and was removed."
+    
+    - name: Remove any stopped containers (if any)
+      shell: docker container prune -f
+      register: prune_output
+      changed_when: "'Total reclaimed space' in prune_output.stdout"
+
+    - name: Remove Docker Hello World image
+      docker_image:
+        name: hello-world
+        state: absent
+
+    - name: Remove unused Docker images
+      shell: docker image prune -a -f
+      register: image_prune_output
+      changed_when: "'Total reclaimed space' in image_prune_output.stdout"
