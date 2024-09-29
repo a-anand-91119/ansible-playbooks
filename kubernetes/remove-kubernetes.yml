@@ -1,0 +1,29 @@
+---
+- hosts: all
+  become: true
+
+  tasks:
+    - name: Reset Kubernetes cluster
+      command: kubeadm reset --force
+      ignore_errors: true
+
+    - name: Purge Kubernetes packages
+      apt:
+        name: "{{ item }}"
+        state: absent
+      loop:
+        - kubeadm
+        - kubectl
+        - kubelet
+        - kubernetes-cni
+        - kube*
+
+    - name: Remove Kubernetes configuration directory
+      file:
+        path: ~/.kube
+        state: absent
+
+    - name: Clean up unused dependencies
+      apt:
+        autoremove: yes
+        purge: yes
