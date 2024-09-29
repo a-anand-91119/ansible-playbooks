@@ -26,15 +26,6 @@
         remote_src: yes
         owner: admin
 
-    - name: Copy admin.conf to user's kube config to ansible local server
-      become: yes
-      become_method: sudo
-      become_user: root
-      fetch:
-        src: /etc/kubernetes/admin.conf
-        dest: /home/pi/.kube/config
-        flat: yes
-
     - name: Install Pod network
       become: true
       become_user: admin
