@@ -53,6 +53,10 @@
         groups: docker
         append: true
     
+    - name: Activate group changes
+      shell: newgrp docker
+      when: ansible_user_id == ansible_user
+    
     - name: Run Hello World docker container
       docker_container:
         name: hello-world-test
