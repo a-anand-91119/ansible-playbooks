@@ -67,7 +67,7 @@
         # cleanup: yes
     
     - name: Check if the Hello World container ran successfully
-      command: docker ps -a --filter "name=hello-world-test" --filter "status=exited" --format "{{.Names}}"
+      command: docker ps -a --filter "name=hello-world-test" --filter "status=exited" --format "{{'{{'}}.Names{{'{{'}}"
       register: container_output
     
     - name: Ensure Hello World container was run and removed successfully
