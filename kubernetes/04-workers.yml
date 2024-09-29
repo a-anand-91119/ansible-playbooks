@@ -10,9 +10,12 @@
 
     - name: Set join command globally
       set_fact:
-        join_command: "{{ join_command_raw.stdout_lines[0] }}"
+        join_command: "{{ join_command_raw.stdout }}"
       delegate_to: localhost
 
+    - name: Debug the join command
+      debug:
+        msg: "Join command: {{ join_command }}"
 
 
 - hosts: workers
@@ -23,7 +26,11 @@
       shell: kubeadm reset -f
       register: output
 
-    - name: Join the cluster
+    - name: Debug join command on workers
+      debug:
+        msg: "Worker node joining with command: {{ hostvars['localhost'].join_command }}"
+
+    - name: Join the cluster using the global join command
       shell: "{{ hostvars['localhost'].join_command }} >> node_joined.txt"
       args:
         chdir: $HOME
