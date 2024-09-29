@@ -19,7 +19,7 @@
         - docker-ce
         - docker-ce-cli
         - docker-compose-plugin
-      when: docker_packages.rc == 0
+#      when: docker_packages.rc == 0
 
     - name: Remove Docker configuration and data directories
       file:
@@ -32,7 +32,7 @@
         - /var/run/docker.sock
         - /var/lib/containerd
         - ~/.docker
-      when: docker_packages.rc == 0
+#      when: docker_packages.rc == 0
 
     - name: Remove Docker group if it exists
       group:
