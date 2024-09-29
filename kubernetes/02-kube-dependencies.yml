@@ -14,34 +14,61 @@
           "exec-opts": ["native.cgroupdriver=systemd"]
           }
 
-    - name: Add Kubernetes apt-key
-      apt_key:
-        url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+    - name: Install required packages for Kubernetes apt repository
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gpg
         state: present
+        update_cache: yes
 
-    - name: Add Kubernetes APT repository
-      apt_repository:
-        repo: deb http://pkgs.k8s.io/ kubernetes-focal main
-        state: present
-        filename: 'kubernetes'
+    - name: Create keyrings directory if it doesn't exist
+      file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
+
+
+    - name: Download Kubernetes GPG key
+      command: >
+        curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.31/deb/Release.key
+        | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+      args:
+        executable: /bin/bash
+
+    - name: Add Kubernetes apt repository
+      copy:
+        dest: /etc/apt/sources.list.d/kubernetes.list
+        content: 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.31/deb/ /'
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Update apt package index
+      apt:
+        update_cache: yes
 
     - name: Install Kubernetes binaries
       apt:
         name: "{{ packages }}"
         state: present
-        update_cache: yes
       vars:
         packages:
           - kubelet
           - kubeadm
           - kubectl
 
+    - name: Pin the installed Kubernetes packages
+      command: apt-mark hold kubelet kubeadm kubectl
+
     - name: Configure node ip
       lineinfile:
         path: /etc/default/kubelet
         line: KUBELET_EXTRA_ARGS=--node-ip={{ node_ip }}
 
-    - name: Restart kubelet
+    - name: Enable and start kubelet service
       service:
         name: kubelet
         daemon_reload: yes
