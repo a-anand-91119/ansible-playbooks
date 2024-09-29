@@ -3,10 +3,45 @@
   become: true
 
   tasks:
-    - name: Uninstall docker packages
-      ansible.builtin.shell: |
-        for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do 
-          apt-get remove -y $pkg; 
-        done
-      args:
-        warn: false 
+    tasks:
+      - name: Identify installed Docker packages
+        command: dpkg -l | grep -i docker
+        register: docker_packages
+        ignore_errors: true
+
+      - name: Remove Docker packages if installed
+        apt:
+          name: "{{ item }}"
+          state: absent
+        loop:
+          - docker-engine
+          - docker
+          - docker.io
+          - docker-ce
+          - docker-ce-cli
+          - docker-compose-plugin
+        when: docker_packages.rc == 0
+
+      - name: Remove Docker configuration and data directories
+        file:
+          path: "{{ item }}"
+          state: absent
+        loop:
+          - /var/lib/docker
+          - /etc/docker
+          - /etc/apparmor.d/docker
+          - /var/run/docker.sock
+          - /var/lib/containerd
+          - ~/.docker
+        when: docker_packages.rc == 0
+
+      - name: Remove Docker group if it exists
+        group:
+          name: docker
+          state: absent
+
+      - name: Clean up unused dependencies
+        apt:
+          autoremove: yes
+          purge: yes
+        when: docker_packages.rc == 0
