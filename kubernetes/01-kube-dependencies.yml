@@ -1,0 +1,46 @@
+---
+- hosts: all
+  become: true
+
+  tasks:
+   - name: Create Docker config directory
+     file: path=/etc/docker state=directory
+
+   - name: changing Docker to systemd driver
+     copy:
+      dest: "/etc/docker/daemon.json"
+      content: |
+        {
+        "exec-opts": ["native.cgroupdriver=systemd"]
+        }
+
+   - name: Add Kubernetes apt-key
+     apt_key:
+       url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+       state: present
+
+   - name: Add Kubernetes APT repository
+     apt_repository:
+      repo: deb http://apt.kubernetes.io/ kubernetes-xenial main
+      state: present
+      filename: 'kubernetes'
+
+   - name: Install kubelet
+     apt:
+       name: kubelet
+       state: present
+       update_cache: true
+
+   - name: Install kubeadm
+     apt:
+       name: kubeadm
+       state: present
+
+- hosts: control_plane
+  become: true
+  tasks:
+   - name: install kubectl
+     apt:
+       name: kubectl
+       state: present
+       force: yes
