@@ -11,6 +11,7 @@
       apt:
         name: "{{ item }}"
         state: absent
+        allow_change_held_packages: true
       loop:
         - kubeadm
         - kubectl
