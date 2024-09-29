@@ -1,0 +1,27 @@
+---
+- hosts: all
+  become: true
+
+  tasks:
+    - name: Reset Kubernetes cluster (removes all nodes and config)
+      command: kubeadm reset --force
+      ignore_errors: true
+
+    - name: Remove Kubernetes configuration directory
+      file:
+        path: ~/.kube
+        state: absent
+
+    - name: Remove network interface configurations (CNI)
+      command: rm -rf /etc/cni/net.d
+      ignore_errors: true
+
+    - name: Remove iptables rules set by Kubernetes
+      command: iptables -F
+      ignore_errors: true
+
+    - name: Clean up any additional containerd artifacts
+      shell: |
+        ctr -n k8s.io container ls | awk '{print $1}' | xargs --no-run-if-empty ctr -n k8s.io container rm
+        ctr -n k8s.io image ls | awk '{print $1}' | xargs --no-run-if-empty ctr -n k8s.io image rm
+      ignore_errors: true
