@@ -43,4 +43,4 @@
       apt:
         autoremove: yes
         purge: yes
-      when: docker_packages.rc == 0
+#      when: docker_packages.rc == 0
