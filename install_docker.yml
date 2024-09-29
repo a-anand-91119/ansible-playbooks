@@ -55,16 +55,13 @@
     
     - name: Activate group changes
       shell: newgrp docker
-      when: ansible_user_id == ansible_user
     
     - name: Run Hello World docker container
       docker_container:
         name: hello-world-test
         image: hello-world
         state: started
-        # auto_remove: true
         detach: false
-        # cleanup: yes
     
     - name: Check if the Hello World container ran successfully
       command: docker ps -a --filter "name=hello-world-test" --filter "status=exited" --format "Names"
