@@ -21,7 +21,7 @@
 
     - name: Add Kubernetes APT repository
       apt_repository:
-        repo: deb http://apt.kubernetes.io/ kubernetes-xenial main
+        repo: deb http://apt.kubernetes.io/ kubernetes-focal main
         state: present
         filename: 'kubernetes'
 
