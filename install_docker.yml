@@ -52,6 +52,12 @@
         name: "{{ ansible_user }}"
         groups: docker
         append: true
+    
+    - name: Set container_default_behavior
+      ansible.builtin.command:
+        cmd: echo "Explicitly setting container_default_behavior"
+      community.general.docker_container:
+        container_default_behavior: "compatibility"
 
     - name: Run Hello World docker container
       docker_container:
