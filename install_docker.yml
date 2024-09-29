@@ -41,15 +41,26 @@
     - name: Install Docker Module for Python
       pip:
         name: docker
+    
+    - name: Add Docker group
+      ansible.builtin.group:
+        name: docker
+        state: present
+
+    - name: Add user to Docker group
+      ansible.builtin.user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: true
 
     - name: Run Hello World docker container
       docker_container:
         name: hello-world-test
         image: hello-world
         state: started
-        auto_remove: true
+        # auto_remove: true
         detach: false
-        cleanup: yes
+        # cleanup: yes
     
     - name: Check if the Hello World container ran successfully
       command: docker ps -a --filter "name=hello-world-test" --filter "status=exited" --format "{{.Names}}"
