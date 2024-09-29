@@ -16,9 +16,10 @@
       command: rm -rf /etc/cni/net.d
       ignore_errors: true
 
-    - name: Remove iptables rules set by Kubernetes
-      command: iptables -F
+    - name: Flush all iptables rules
+      command: iptables-save | grep -v KUBE | iptables-restore
       ignore_errors: true
+      timeout: 10
 
     - name: Clean up any additional containerd artifacts
       shell: |
