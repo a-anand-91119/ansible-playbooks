@@ -1,6 +1,7 @@
 ---
 - hosts: all
   become: true
+  gather_facts: false
 
   tasks:
     - name: Reset Kubernetes cluster (removes all nodes and config)
