@@ -3,18 +3,6 @@
   become: true
 
   tasks:
-    - name: Configure sysctl params for Kubernetes.
-      lineinfile:
-        path: /etc/sysctl.d/99-kubernetes-cri.conf
-        line: "{{ item }}"
-      with_items:
-        - 'net.bridge.bridge-nf-call-iptables  = 1'
-        - 'net.ipv4.ip_forward                 = 1'
-        - 'net.bridge.bridge-nf-call-ip6tables = 1'
-
-    - name: Apply sysctl params without reboot.
-      command: sysctl --system
-
     - name: Install required packages for Kubernetes apt repository
       apt:
         name:
