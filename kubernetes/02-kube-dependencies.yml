@@ -30,13 +30,9 @@
         state: directory
         mode: '0755'
 
-
     - name: Download Kubernetes GPG key
-      command: >
-        curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.31/deb/Release.key
-        | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-      args:
-        executable: /bin/bash
+      shell: |
+        curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.31/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
 
     - name: Add Kubernetes apt repository
       copy:
