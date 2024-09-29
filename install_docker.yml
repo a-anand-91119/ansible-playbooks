@@ -53,9 +53,6 @@
         groups: docker
         append: true
     
-    - name: Activate group changes
-      shell: newgrp docker
-    
     - name: Run Hello World docker container
       docker_container:
         name: hello-world-test
