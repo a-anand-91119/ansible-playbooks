@@ -10,6 +10,7 @@
           - ca-certificates
           - curl
           - gpg
+          - gnupg-agent
         state: present
         update_cache: yes
 

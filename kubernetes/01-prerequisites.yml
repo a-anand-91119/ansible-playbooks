@@ -3,11 +3,6 @@
   become: true
 
   tasks:
-    - name: Create a empty file for kubernetes sysctl params.
-      copy:
-        content: ""
-        dest: /etc/sysctl.d/99-kubernetes-cri.conf
-        force: no
 
     - name: Remove swapfile from /etc/fstab
       mount:
@@ -29,6 +24,12 @@
         replace: '#\1\2\3swap\4'
         backup: yes
 
+    - name: Create a empty file for kubernetes sysctl params.
+      copy:
+        content: ""
+        dest: /etc/sysctl.d/99-kubernetes-cri.conf
+        force: no
+        
     - name: Configure sysctl params for Kubernetes.
       lineinfile:
         path: /etc/sysctl.d/99-kubernetes-cri.conf
