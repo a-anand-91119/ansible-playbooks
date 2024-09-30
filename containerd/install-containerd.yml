@@ -16,6 +16,34 @@
           overlay
           br_netfilter
 
+    - name: Load the overlay module
+      command: modprobe overlay
+      args:
+        warn: false
+
+    - name: Load the br_netfilter module
+      command: modprobe br_netfilter
+      args:
+        warn: false
+
+    - name: Verify that the overlay module is loaded
+      shell: lsmod | grep overlay
+      register: overlay_module
+      changed_when: false
+
+    - name: Verify that the br_netfilter module is loaded
+      shell: lsmod | grep br_netfilter
+      register: br_netfilter_module
+      changed_when: false
+
+    - name: Print overlay module load status
+      debug:
+        msg: "Overlay module loaded: {{ overlay_module.stdout }}"
+
+    - name: Print br_netfilter module load status
+      debug:
+        msg: "br_netfilter module loaded: {{ br_netfilter_module.stdout }}"
+
     - name: Add Docker’s official GPG key
       apt_key:
         url: https://download.docker.com/linux/ubuntu/gpg
@@ -28,12 +56,12 @@
         state: present
         update_cache: yes
 
-#    - name: Add Docker Repository
-#      apt_repository:
-#        repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable
-#        state: present
-#        filename: docker
-#        update_cache: yes
+    #    - name: Add Docker Repository
+    #      apt_repository:
+    #        repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable
+    #        state: present
+    #        filename: docker
+    #        update_cache: yes
 
     - name: "Update cache & Full system update"
       apt:
