@@ -1,8 +1,42 @@
 ---
+- hosts: control_plane
+  become: true
+
+  tasks:
+    - name: Allow Kubernetes control plane ports in UFW
+      ufw:
+        rule: allow
+        port: "{{ item.port }}"
+        proto: tcp
+        comment: "{{ item.comment }}"
+      with_items:
+        - { port: 6443, comment: "Open Kubernetes API Server port" }
+        - { port: 2379:2380, comment: "Open etcd server client API ports" }
+        - { port: 10259, comment: "Open kube-scheduler port" }
+        - { port: 10257, comment: "Open kube-controller-manager port" }
+
+    - name: Enable UFW
+      ufw:
+        state: enabled
+
 - hosts: all
   become: true
 
   tasks:
+    -
+    - name: Allow Kubernetes control plane ports in UFW
+      ufw:
+        rule: allow
+        port: "{{ item.port }}"
+        proto: tcp
+        comment: "{{ item.comment }}"
+      with_items:
+        - { port: 10250, comment: "Open Kubelet API port" }
+        - { port: 30000:32767, comment: "NodePort Services" }
+
+    - name: Enable UFW
+      ufw:
+        state: enabled
 
     - name: Remove swapfile from /etc/fstab
       mount:
