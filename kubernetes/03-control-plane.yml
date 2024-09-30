@@ -55,12 +55,12 @@
     - name: Copy admin.conf to user's kube config
       copy:
         src: /etc/kubernetes/admin.conf
-        dest: /home/admin/.kube/config
+        dest: $HOME/.kube/config
         remote_src: yes
         owner: admin
 
     - name: Create Calico Operator using kubectl
-      ansible.builtin.command: kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.28.0/manifests/tigera-operator.yaml
+      shell: kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.28.0/manifests/tigera-operator.yaml
       register: tigera_operator_output
 
     - name: Download Calico Custom Resources manifest
@@ -68,8 +68,14 @@
         url: https://raw.githubusercontent.com/projectcalico/calico/v3.28.0/manifests/custom-resources.yaml
         dest: /tmp/custom-resources.yaml
 
+    - name: Change cidr value in the custom-resources.yaml
+      ansible.builtin.replace:
+        path: /tmp/custom-resources.yaml
+        regexp: 'cidr: 192\.168\.0\.0/16'
+        replace: 'cidr: 10.244.0.0/16'
+
     - name: Apply Custom Resources manifest using kubectl
-      ansible.builtin.command: kubectl apply -f /tmp/custom-resources.yaml
+      shell: kubectl apply -f /tmp/custom-resources.yaml
       register: calico_custom_resources_output
 
     - name: Ensure Tigera Operator was created successfully
