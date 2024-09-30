@@ -60,7 +60,7 @@
         owner: admin
 
     - name: Create Calico Operator using kubectl
-      shell: kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.28.0/manifests/tigera-operator.yaml
+      shell: kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.28.0/manifests/tigera-operator.yaml --validate=false
       register: tigera_operator_output
 
     - name: Download Calico Custom Resources manifest
