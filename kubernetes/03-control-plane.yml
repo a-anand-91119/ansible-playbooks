@@ -37,11 +37,6 @@
     - name: Configure crictl to use containerd
       ansible.builtin.command:
         cmd: crictl config runtime-endpoint unix:///var/run/containerd/containerd.sock
-      register: crictl_output
-
-    - name: Display crictl configuration output
-      debug:
-        msg: "{{ crictl_output.stdout }}"
 
     - name: Initializing Kubernetes cluster
       shell: kubeadm init --apiserver-advertise-address=$(ip a |grep ens160|  grep 'inet ' | awk '{print $2}' | cut -f1 -d'/') --pod-network-cidr 10.244.0.0/16 --v=5
