@@ -59,6 +59,9 @@
         remote_src: yes
         owner: admin
 
+- hosts: control_plane
+  tasks:
+
     - name: Check if Kubernetes cluster is running
       command: kubectl cluster-info
       register: cluster_info
