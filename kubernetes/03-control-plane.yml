@@ -38,7 +38,6 @@
 #      changed_when: false
 
     - name: Customize CALICO_IPV4POOL_CIDR if required
-      when: cidr_check.failed
       ansible.builtin.replace:
         path: /tmp/calico.yaml
         regexp: '# - name: CALICO_IPV4POOL_CIDR'
