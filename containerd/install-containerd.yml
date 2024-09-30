@@ -80,7 +80,7 @@
       lineinfile:
         path: /etc/containerd/config.toml
         regexp: '^(\s*SystemdCgroup\s*=\s*)false'
-        line: 'SystemdCgroup=true'
+        line: '            SystemdCgroup=true'
         backup: yes
 
     - name: Enable containerd service, and start it.
