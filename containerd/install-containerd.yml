@@ -18,13 +18,9 @@
 
     - name: Load the overlay module
       command: modprobe overlay
-      args:
-        warn: false
 
     - name: Load the br_netfilter module
       command: modprobe br_netfilter
-      args:
-        warn: false
 
     - name: Verify that the overlay module is loaded
       shell: lsmod | grep overlay
