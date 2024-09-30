@@ -59,6 +59,15 @@
         remote_src: yes
         owner: admin
 
+    - name: Check if Kubernetes cluster is running
+      command: kubectl cluster-info
+      register: cluster_info
+      ignore_errors: true
+
+    - name: Print cluster status
+      debug:
+        var: cluster_info
+
     - name: Create Calico Operator using kubectl
       shell: kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.28.0/manifests/tigera-operator.yaml --validate=false
       register: tigera_operator_output
