@@ -31,11 +31,11 @@
         url: https://raw.githubusercontent.com/projectcalico/calico/v3.28.2/manifests/calico.yaml
         dest: /tmp/calico.yaml
 
-    - name: Check if pod CIDR is 192.168.0.0/16 (skip if CIDR is correct)
-      ansible.builtin.command: "grep -q '192.168.0.0/16' /etc/kubernetes/manifests/kubeadm-config.yaml"
-      register: cidr_check
-      ignore_errors: true
-      changed_when: false
+#    - name: Check if pod CIDR is 192.168.0.0/16 (skip if CIDR is correct)
+#      ansible.builtin.command: "grep -q '192.168.0.0/16' /etc/kubernetes/manifests/kubeadm-config.yaml"
+#      register: cidr_check
+#      ignore_errors: true
+#      changed_when: false
 
     - name: Customize CALICO_IPV4POOL_CIDR if required
       when: cidr_check.failed
