@@ -26,37 +26,23 @@
         remote_src: yes
         owner: admin
 
-    - name: Download Calico networking manifest
+    - name: Create Calico Operator using kubectl
+      ansible.builtin.command: kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.28.0/manifests/tigera-operator.yaml
+      register: tigera_operator_output
+
+    - name: Download Calico Custom Resources manifest
       ansible.builtin.get_url:
-        url: https://raw.githubusercontent.com/projectcalico/calico/v3.28.2/manifests/calico.yaml
-        dest: /tmp/calico.yaml
+        url: https://raw.githubusercontent.com/projectcalico/calico/v3.28.0/manifests/custom-resources.yaml
+        dest: /tmp/custom-resources.yaml
 
-#    - name: Check if pod CIDR is 192.168.0.0/16 (skip if CIDR is correct)
-#      ansible.builtin.command: "grep -q '192.168.0.0/16' /etc/kubernetes/manifests/kubeadm-config.yaml"
-#      register: cidr_check
-#      ignore_errors: true
-#      changed_when: false
+    - name: Apply Custom Resources manifest using kubectl
+      ansible.builtin.command: kubectl apply -f /tmp/custom-resources.yaml
+      register: calico_custom_resources_output
 
-    - name: Customize CALICO_IPV4POOL_CIDR if required
-      ansible.builtin.replace:
-        path: /tmp/calico.yaml
-        regexp: '# - name: CALICO_IPV4POOL_CIDR'
-        replace: '- name: CALICO_IPV4POOL_CIDR\n  value: "{{ pod_cidr }}"'
-      vars:
-        pod_cidr: "10.244.0.0/16"
-
-#    - name: Install Pod network
-#      become: true
-#      become_user: admin
-#      shell: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml >> pod_network_setup.txt
-#      args:
-#        chdir: $HOME
-#        creates: pod_network_setup.txt
-
-    - name: Install Pod network
-      ansible.builtin.command: "kubectl apply -f /tmp/calico.yaml"
-      register: calico_apply_output
-
-    - name: Ensure Calico applied successfully
+    - name: Ensure Tigera Operator was created successfully
       debug:
-        msg: "{{ calico_apply_output.stdout }}"
+        msg: "{{ tigera_operator_output.stdout }}"
+
+    - name: Ensure Calico Custom Resources applied successfully
+      debug:
+        msg: "{{ calico_custom_resources_output.stdout }}"
