@@ -26,10 +26,38 @@
         remote_src: yes
         owner: admin
 
+    - name: Download Calico networking manifest
+      ansible.builtin.get_url:
+        url: https://raw.githubusercontent.com/projectcalico/calico/v3.28.2/manifests/calico.yaml
+        dest: /tmp/calico.yaml
+
+    - name: Check if pod CIDR is 192.168.0.0/16 (skip if CIDR is correct)
+      ansible.builtin.command: "grep -q '192.168.0.0/16' /etc/kubernetes/manifests/kubeadm-config.yaml"
+      register: cidr_check
+      ignore_errors: true
+      changed_when: false
+
+    - name: Customize CALICO_IPV4POOL_CIDR if required
+      when: cidr_check.failed
+      ansible.builtin.replace:
+        path: /tmp/calico.yaml
+        regexp: '# - name: CALICO_IPV4POOL_CIDR'
+        replace: '- name: CALICO_IPV4POOL_CIDR\n  value: "{{ pod_cidr }}"'
+      vars:
+        pod_cidr: "10.244.0.0/16"
+
+#    - name: Install Pod network
+#      become: true
+#      become_user: admin
+#      shell: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml >> pod_network_setup.txt
+#      args:
+#        chdir: $HOME
+#        creates: pod_network_setup.txt
+
     - name: Install Pod network
-      become: true
-      become_user: admin
-      shell: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml >> pod_network_setup.txt
-      args:
-        chdir: $HOME
-        creates: pod_network_setup.txt
+      ansible.builtin.command: "kubectl apply -f /tmp/calico.yaml"
+      register: calico_apply_output
+
+    - name: Ensure Calico applied successfully
+      debug:
+        msg: "{{ calico_apply_output.stdout }}"
