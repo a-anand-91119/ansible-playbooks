@@ -1,9 +1,47 @@
 ---
 - hosts: control_plane
   become: true
+
   tasks:
     - name: Pulling images required for setting up a Kubernetes cluster
       shell: kubeadm config images pull
+
+    - name: Download runc binary
+      ansible.builtin.get_url:
+        url: https://github.com/opencontainers/runc/releases/download/v1.1.12/runc.amd64
+        dest: /tmp/runc.amd64
+        mode: '0755'
+
+    - name: Install runc binary
+      ansible.builtin.command:
+        cmd: install -m 755 /tmp/runc.amd64 /usr/local/sbin/runc
+
+    - name: Download CNI plugins
+      ansible.builtin.get_url:
+        url: https://github.com/containernetworking/plugins/releases/download/v1.5.0/cni-plugins-linux-amd64-v1.5.0.tgz
+        dest: /tmp/cni-plugins-linux-amd64-v1.5.0.tgz
+
+    - name: Create CNI bin directory
+      ansible.builtin.file:
+        path: /opt/cni/bin
+        state: directory
+        mode: '0755'
+
+    - name: Extract CNI plugins
+      ansible.builtin.unarchive:
+        src: /tmp/cni-plugins-linux-amd64-v1.5.0.tgz
+        dest: /opt/cni/bin
+        remote_src: yes
+        extra_opts: [ '--strip-components=1' ]
+
+    - name: Configure crictl to use containerd
+      ansible.builtin.command:
+        cmd: crictl config runtime-endpoint unix:///var/run/containerd/containerd.sock
+      register: crictl_output
+
+    - name: Display crictl configuration output
+      debug:
+        msg: "{{ crictl_output.stdout }}"
 
     - name: Initializing Kubernetes cluster
       shell: kubeadm init --apiserver-advertise-address=$(ip a |grep ens160|  grep 'inet ' | awk '{print $2}' | cut -f1 -d'/') --pod-network-cidr 10.244.0.0/16 --v=5
