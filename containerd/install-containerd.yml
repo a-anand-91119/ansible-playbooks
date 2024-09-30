@@ -52,13 +52,6 @@
         state: present
         update_cache: yes
 
-    #    - name: Add Docker Repository
-    #      apt_repository:
-    #        repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable
-    #        state: present
-    #        filename: docker
-    #        update_cache: yes
-
     - name: "Update cache & Full system update"
       apt:
         update_cache: true
@@ -82,6 +75,13 @@
         containerd config default | tee /etc/containerd/config.toml
       args:
         creates: /etc/containerd/config.toml
+
+    - name: Update SystemdCgroup to true in containerd config
+      lineinfile:
+        path: /etc/containerd/config.toml
+        regexp: '^(\s*SystemdCgroup\s*=\s*)false'
+        line: '\1true'
+        backup: yes
 
     - name: Enable containerd service, and start it.
       systemd:
