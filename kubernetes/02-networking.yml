@@ -116,6 +116,34 @@
         - 'net.ipv4.ip_forward'
       register: sysctl_check
 
+    - name: Load br_netfilter module again (if needed)
+      command: modprobe br_netfilter
+
+    - name: Apply sysctl from /etc/sysctl.conf
+      command: sysctl -p /etc/sysctl.conf
+
     - name: Display verification results
       debug:
         var: sysctl_check.stdout_lines
+
+    - name: Download CNI plugins
+      ansible.builtin.get_url:
+        url: https://github.com/containernetworking/plugins/releases/download/v1.5.0/cni-plugins-linux-amd64-v1.5.0.tgz
+        dest: /tmp/cni-plugins-linux-amd64-v1.5.0.tgz
+
+    - name: Create CNI bin directory
+      ansible.builtin.file:
+        path: /opt/cni/bin
+        state: directory
+        mode: '0755'
+
+    - name: Extract CNI plugins
+      ansible.builtin.unarchive:
+        src: /tmp/cni-plugins-linux-amd64-v1.5.0.tgz
+        dest: /opt/cni/bin
+        remote_src: yes
+        extra_opts: [ '--strip-components=1' ]
+
+    - name: Configure crictl to use containerd
+      ansible.builtin.command:
+        cmd: crictl config runtime-endpoint unix:///var/run/containerd/containerd.sock

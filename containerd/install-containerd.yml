@@ -11,18 +11,13 @@
         state: present
         update_cache: yes
 
-    - name: Create a empty file for containerd module.
-      copy:
-        content: ""
-        dest: /etc/modules-load.d/containerd.conf
-        force: no
-
     - name: Configure module for containerd.
       blockinfile:
         path: /etc/modules-load.d/containerd.conf
         block: |
           overlay
           br_netfilter
+        create: yes
 
     - name: Load the overlay module
       command: modprobe overlay
