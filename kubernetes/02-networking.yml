@@ -68,7 +68,7 @@
                   - {{ ip_address }}/24
                 gateway4: {{ gateway }}
                 nameservers:
-                  addresses: [{{ nameservers | join(', ') }}]
+                  addresses: {{ nameservers }}
         owner: root
         group: root
         mode: '0644'
