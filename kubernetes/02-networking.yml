@@ -30,7 +30,7 @@
     - name: Ensure hostname is reflected in /etc/hosts
       ansible.builtin.lineinfile:
         path: /etc/hosts
-        regexp: "^127\.0\.1\.1\s+"
+        regexp: "^127\\.0\\.1\\.1\\s+"
         line: "127.0.1.1 {{ inventory_hostname }}"
         state: present
 
