@@ -108,6 +108,12 @@
     - name: Apply sysctl params without reboot.
       command: sysctl --system
 
+    - name: Load br_netfilter module again (if needed)
+      command: modprobe br_netfilter
+
+    - name: Apply sysctl from /etc/sysctl.conf
+      command: sysctl -p /etc/sysctl.conf
+
     - name: Verify sysctl params
       shell: "sysctl {{ item }}"
       with_items:
@@ -115,12 +121,6 @@
         - 'net.bridge.bridge-nf-call-ip6tables'
         - 'net.ipv4.ip_forward'
       register: sysctl_check
-
-    - name: Load br_netfilter module again (if needed)
-      command: modprobe br_netfilter
-
-    - name: Apply sysctl from /etc/sysctl.conf
-      command: sysctl -p /etc/sysctl.conf
 
     - name: Display verification results
       debug:
@@ -143,7 +143,3 @@
         dest: /opt/cni/bin
         remote_src: yes
         extra_opts: [ '--strip-components=1' ]
-
-    - name: Configure crictl to use containerd
-      ansible.builtin.command:
-        cmd: crictl config runtime-endpoint unix:///var/run/containerd/containerd.sock
