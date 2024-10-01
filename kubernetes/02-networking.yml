@@ -1,0 +1,121 @@
+---
+- hosts: control_plane
+  become: true
+
+  tasks:
+    - name: Allow Kubernetes control plane ports in UFW
+      ufw:
+        rule: allow
+        port: "{{ item.port }}"
+        proto: tcp
+        comment: "{{ item.comment }}"
+      with_items:
+        - { port: 6443, comment: "Open Kubernetes API Server port" }
+        - { port: 2379:2380, comment: "Open etcd server client API ports" }
+        - { port: 10259, comment: "Open kube-scheduler port" }
+        - { port: 10257, comment: "Open kube-controller-manager port" }
+
+    - name: Enable UFW
+      ufw:
+        state: enabled
+
+- hosts: all
+  become: true
+
+  tasks:
+    - name: Set hostname to match the inventory name
+      ansible.builtin.hostname:
+        name: "{{ inventory_hostname }}"
+
+    - name: Ensure hostname is reflected in /etc/hosts
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        regexp: "^127\.0\.1\.1\s+"
+        line: "127.0.1.1 {{ inventory_hostname }}"
+        state: present
+
+    - name: Disable cloud-init's network configuration
+      ansible.builtin.file:
+        path: /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg
+        state: touch
+        mode: '0644'
+
+    - name: Write content to disable cloud-init network configuration
+      ansible.builtin.copy:
+        dest: /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg
+        content: |
+          network: {config: disabled}
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Set static IP configuration variables
+      ansible.builtin.set_fact:
+        ip_address: "{{ hostvars[inventory_hostname]['ip_address'] }}"
+        gateway: "{{ hostvars[inventory_hostname]['gateway'] }}"
+        nameservers: "{{ hostvars[inventory_hostname]['nameservers'] }}"
+
+    - name: Create netplan config for static IP
+      ansible.builtin.copy:
+        dest: /etc/netplan/00_installer_config.yaml
+        content: |
+          network:
+            version: 2
+            renderer: networkd
+            ethernets:
+              enp1s0:
+                addresses:
+                  - {{ ip_address }}/24
+                gateway4: {{ gateway }}
+                nameservers:
+                  addresses: [{{ nameservers | join(', ') }}]
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Apply netplan configuration
+      ansible.builtin.command: netplan apply
+
+    - name: Allow Kubernetes control plane ports in UFW
+      ufw:
+        rule: allow
+        port: "{{ item.port }}"
+        proto: tcp
+        comment: "{{ item.comment }}"
+      with_items:
+        - { port: 10250, comment: "Open Kubelet API port" }
+        - { port: 30000:32767, comment: "NodePort Services" }
+
+    - name: Enable UFW
+      ufw:
+        state: enabled
+
+    - name: Create a empty file for kubernetes sysctl params.
+      copy:
+        content: ""
+        dest: /etc/sysctl.d/99-kubernetes-cri.conf
+        force: no
+
+    - name: Configure sysctl params for Kubernetes.
+      lineinfile:
+        path: /etc/sysctl.d/99-kubernetes-cri.conf
+        line: "{{ item }}"
+      with_items:
+        - 'net.bridge.bridge-nf-call-iptables  = 1'
+        - 'net.bridge.bridge-nf-call-ip6tables = 1'
+        - 'net.ipv4.ip_forward                 = 1'
+
+    - name: Apply sysctl params without reboot.
+      command: sysctl --system
+
+    - name: Verify sysctl params
+      shell: "sysctl {{ item }}"
+      with_items:
+        - 'net.bridge.bridge-nf-call-iptables'
+        - 'net.bridge.bridge-nf-call-ip6tables'
+        - 'net.ipv4.ip_forward'
+      register: sysctl_check
+
+    - name: Display verification results
+      debug:
+        var: sysctl_check.stdout_lines
