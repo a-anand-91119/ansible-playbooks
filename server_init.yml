@@ -1,5 +1,5 @@
 ---
-- hosts: all
+- hosts: new_servers
   become: true
   become_user: root
   vars:
