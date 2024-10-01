@@ -23,7 +23,59 @@
   become: true
 
   tasks:
-    -
+    - name: Set hostname to match the inventory name
+      ansible.builtin.hostname:
+        name: "{{ inventory_hostname }}"
+
+    - name: Ensure hostname is reflected in /etc/hosts
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        regexp: "^127\.0\.1\.1\s+"
+        line: "127.0.1.1 {{ inventory_hostname }}"
+        state: present
+
+    - name: Disable cloud-init's network configuration
+      ansible.builtin.file:
+        path: /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg
+        state: touch
+        mode: '0644'
+
+    - name: Write content to disable cloud-init network configuration
+      ansible.builtin.copy:
+        dest: /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg
+        content: |
+          network: {config: disabled}
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Set static IP configuration variables
+      ansible.builtin.set_fact:
+        ip_address: "{{ hostvars[inventory_hostname]['ip_address'] }}"
+        gateway: "{{ hostvars[inventory_hostname]['gateway'] }}"
+        nameservers: "{{ hostvars[inventory_hostname]['nameservers'] }}"
+
+    - name: Create netplan config for static IP
+      ansible.builtin.copy:
+        dest: /etc/netplan/00_installer_config.yaml
+        content: |
+          network:
+            version: 2
+            renderer: networkd
+            ethernets:
+              enp1s0:
+                addresses:
+                  - {{ ip_address }}/24
+                gateway4: {{ gateway }}
+                nameservers:
+                  addresses: [{{ nameservers | join(', ') }}]
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Apply netplan configuration
+      ansible.builtin.command: netplan apply
+
     - name: Allow Kubernetes control plane ports in UFW
       ufw:
         rule: allow
