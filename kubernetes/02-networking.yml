@@ -3,19 +3,6 @@
   become: true
 
   tasks:
-    - name: Reset UFW firewall
-      command: ufw reset
-      register: ufw_reset_output
-
-    - debug:
-        msg: "UFW reset result: {{ ufw_reset_output.stdout }}"
-
-    - name: Enable UFW after reset
-      command: ufw enable
-      register: ufw_enable_output
-
-    - debug:
-        msg: "UFW enabled: {{ ufw_enable_output.stdout }}"
     - name: Allow Kubernetes control plane ports in UFW
       ufw:
         rule: allow
