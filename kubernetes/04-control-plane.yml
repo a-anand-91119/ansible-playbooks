@@ -16,7 +16,7 @@
       ansible.builtin.command:
         cmd: install -m 755 /tmp/runc.amd64 /usr/local/sbin/runc
 
-    - name: Set static IP configuration variables
+    - name: Fetch and store node ip address
       ansible.builtin.set_fact:
         ip_address: "{{ hostvars[inventory_hostname]['ip_address'] }}"
 
