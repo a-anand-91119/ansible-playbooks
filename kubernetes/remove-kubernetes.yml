@@ -1,5 +1,6 @@
 ---
 - hosts: all
+  name: Cleanup Kubernetes, reset iptables, and reload systemd
   become: true
 
   tasks:
@@ -24,7 +25,41 @@
         path: ~/.kube
         state: absent
 
+    - name: Remove all specified directories and files
+      file:
+        path: "{{ item }}"
+        state: absent
+        recurse: true
+      loop:
+        - "{{ ansible_env.HOME }}/.kube"
+        - "/home/root/.kube"
+        - "/etc/cni"
+        - "/etc/kubernetes"
+        - "/etc/apparmor.d/docker"
+        - "/etc/systemd/system/etcd*"
+        - "/var/lib/dockershim"
+        - "/var/lib/etcd"
+        - "/var/lib/kubelet"
+        - "/var/lib/etcd2"
+        - "/var/run/kubernetes"
+      ignore_errors: true
+
     - name: Clean up unused dependencies
       apt:
         autoremove: yes
         purge: yes
+
+    - name: Flush and delete iptables filter table
+      command: iptables -F && iptables -X
+
+    - name: Flush and delete iptables NAT table
+      command: iptables -t nat -F && iptables -t nat -X
+
+    - name: Flush and delete iptables raw table
+      command: iptables -t raw -F && iptables -t raw -X
+
+    - name: Flush and delete iptables mangle table
+      command: iptables -t mangle -F && iptables -t mangle -X
+
+    - name: Reload systemd manager to apply changes
+      command: systemctl daemon-reload
