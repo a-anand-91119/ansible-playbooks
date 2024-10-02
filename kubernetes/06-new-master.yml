@@ -21,11 +21,21 @@
         dest: "/tmp/kubernetes_master_join_command"
         flat: yes
 
-    - name: Copy the required certs from the existing master
+    - name: Fetch CA certificates and keys from control plane
       fetch:
-        src: /etc/kubernetes/pki/ca.crt
-        dest: /tmp/ca.crt
+        src: "{{ item.src }}"
+        dest: "/tmp/certificates/{{ inventory_hostname }}/{{ item.dest }}"
         flat: yes
+      loop:
+        - { src: '/etc/kubernetes/pki/ca.crt', dest: 'ca.crt' }
+        - { src: '/etc/kubernetes/pki/ca.key', dest: 'ca.key' }
+        - { src: '/etc/kubernetes/pki/sa.key', dest: 'sa.key' }
+        - { src: '/etc/kubernetes/pki/sa.pub', dest: 'sa.pub' }
+        - { src: '/etc/kubernetes/pki/front-proxy-ca.crt', dest: 'front-proxy-ca.crt' }
+        - { src: '/etc/kubernetes/pki/front-proxy-ca.key', dest: 'front-proxy-ca.key' }
+        - { src: '/etc/kubernetes/pki/etcd/ca.crt', dest: 'etcd-ca.crt' }
+        - { src: '/etc/kubernetes/pki/etcd/ca.key', dest: 'etcd-ca.key' }
+
 
 - hosts: new_master
   become: true
@@ -41,6 +51,21 @@
         dest: /tmp/kubernetes_master_join_command
         mode: 0777
 
+    - name: Copy CA certificates and keys to new master node
+      copy:
+        src: "/tmp/certificates/control_plane/"
+        dest: "/home/{{ user }}/"
+        mode: 0644
+      with_items:
+        - ca.crt
+        - ca.key
+        - sa.key
+        - sa.pub
+        - front-proxy-ca.crt
+        - front-proxy-ca.key
+        - etcd-ca.crt
+        - etcd-ca.key
+
     - name: Ensure /etc/kubernetes/pki directory exists
       file:
         path: /etc/kubernetes/pki
@@ -49,11 +74,24 @@
         owner: root
         group: root
 
-    - name: Copy CA certificate to the new master node
-      copy:
-        src: /tmp/ca.crt
-        dest: /etc/kubernetes/pki/ca.crt
-        mode: 0644
+    - name: Move copied certificates to correct locations on new master node
+      block:
+          - name: Move CA certificate to /etc/kubernetes/pki
+            command: mv /home/{{ user }}/ca.crt /etc/kubernetes/pki/
+          - name: Move CA key to /etc/kubernetes/pki
+            command: mv /home/{{ user }}/ca.key /etc/kubernetes/pki/
+          - name: Move SA key to /etc/kubernetes/pki
+            command: mv /home/{{ user }}/sa.key /etc/kubernetes/pki/
+          - name: Move SA public key to /etc/kubernetes/pki
+            command: mv /home/{{ user }}/sa.pub /etc/kubernetes/pki/
+          - name: Move Front Proxy CA certificate to /etc/kubernetes/pki
+            command: mv /home/{{ user }}/front-proxy-ca.crt /etc/kubernetes/pki/
+          - name: Move Front Proxy CA key to /etc/kubernetes/pki
+            command: mv /home/{{ user }}/front-proxy-ca.key /etc/kubernetes/pki/
+          - name: Move etcd CA certificate to /etc/kubernetes/pki/etcd
+            command: mv /home/{{ user }}/etcd-ca.crt /etc/kubernetes/pki/etcd/ca.crt
+          - name: Move etcd CA key to /etc/kubernetes/pki/etcd
+            command: mv /home/{{ user }}/etcd-ca.key /etc/kubernetes/pki/etcd/ca.key
 
     - name: Join the new master node to the control plane
       command: sh /tmp/kubernetes_master_join_command
