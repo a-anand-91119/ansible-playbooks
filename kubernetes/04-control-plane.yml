@@ -20,12 +20,6 @@
       ansible.builtin.set_fact:
         ip_address: "{{ hostvars[inventory_hostname]['ip_address'] }}"
 
-#    - name: Initializing Kubernetes cluster
-#      shell: kubeadm init --apiserver-advertise-address=$(ip a | grep enp1s0 |  grep 'inet ' | awk '{print $2}' | cut -f1 -d'/') --pod-network-cidr 10.244.0.0/16 --control-plane-endpoint "" --v=5
-#      register: myshell_output
-
-    - debug: msg="{{ control_plane_ip.stdout }}"
-
     - name: Run kubeadm init with control plane endpoint
       shell: |
         kubeadm init \
