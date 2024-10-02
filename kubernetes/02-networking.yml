@@ -1,5 +1,5 @@
 ---
-- hosts: control_plane
+- hosts: all
   become: true
 
   tasks:
@@ -7,22 +7,65 @@
       ufw:
         rule: allow
         port: "{{ item.port }}"
-        proto: tcp
+        proto: "{{ item.proto }}"
         comment: "{{ item.comment }}"
       with_items:
-        - { port: 6443, comment: "Open Kubernetes API Server port" }
-        - { port: 2379:2380, comment: "Open etcd server client API ports" }
-        - { port: 10259, comment: "Open kube-scheduler port" }
-        - { port: 10257, comment: "Open kube-controller-manager port" }
+        - { port: 22, proto: tcp, comment: "SSH Port" }
+        - { port: 80, proto: tcp, comment: "HTTP Port" }
+        - { port: 179, proto: tcp, comment: "Calico BGP Port" }
+        - { port: 443, proto: tcp, comment: "HTTPS Port / Kubernetes API" }
+        - { port: 1338, proto: tcp, comment: "Containerd Metrics port" }
+        - { port: 2376, proto: tcp, comment: "Node driver Docker daemon TLS port" }
+        - { port: 2379, proto: tcp, comment: "Etcd client requests" }
+        - { port: 2380, proto: tcp, comment: "Etcd peer communication" }
+        - { port: 2381, proto: tcp, comment: "Etcd events peering" }
+        - { port: 3988, proto: tcp, comment: "Kops controller serving port" }
+        - { port: 3989, proto: tcp, comment: "Node local dns health check" }
+        - { port: 3990, proto: tcp, comment: "Kube API health check" }
+        - { port: 3991, proto: tcp, comment: "Etcd-manager - cilium - grpc" }
+        - { port: 3992, proto: tcp, comment: "Etcd-manager - cilium - quarantined" }
+        - { port: 3993, proto: tcp, comment: "Dns gossip - dns-controller - member list" }
+        - { port: 3994, proto: tcp, comment: "Etcd-manager - main - quarantined" }
+        - { port: 3995, proto: tcp, comment: "Etcd-manager - events - quarantined" }
+        - { port: 3996, proto: tcp, comment: "Etcd-manager - main - grpc" }
+        - { port: 3997, proto: tcp, comment: "Etcd-manager - events - grpc" }
+        - { port: 3998, proto: tcp, comment: "Dns gossip - protokube - weave mesh" }
+        - { port: 3999, proto: tcp, comment: "Dns gossip - dns-controller - weave mesh" }
+        - { port: 4000, proto: tcp, comment: "Protokube gossip member list" }
+        - { port: 4001, proto: tcp, comment: "Etcd main client" }
+        - { port: 4002, proto: tcp, comment: "Etcd events client" }
+        - { port: 4149, proto: tcp, comment: "BGP Peer Port" }
+        - { port: 4789, proto: udp, comment: "Flannel VXLAN overlay networking on Windows cluster" }
+        - { port: 5473, proto: tcp, comment: "BGP Peer Port" }
+        - { port: 6443, proto: tcp, comment: "Kubernetes API Server port" }
+        - { port: 6783, proto: tcp, comment: "Weave Port" }
+        - { port: 6783:6784, proto: udp, comment: "Weave UDP Ports" }
+        - { port: 6942, proto: tcp, comment: "Cilium operator prometheus port" }
+        - { port: 8472, proto: udp, comment: "Canal/Flannel VXLAN overlay networking" }
+        - { port: 9099, proto: tcp, comment: "Canal/Flannel livenessProbe/readinessProbe" }
+        - { port: 9443, proto: tcp, comment: "Rancher webhook" }
+        - { port: 9796, proto: tcp, comment: "Default port required by Monitoring to scrape metrics from Linux and Windows node-exporters" }
+        - { port: 9090, proto: tcp, comment: "Cilium prometheus port" }
+        - { port: 9091, proto: tcp, comment: "Cilium hubble prometheus port" }
+        - { port: 9099, proto: tcp, comment: "Generic Port" }
+        - { port: 10248, proto: tcp, comment: "Localhost healthz endpoint" }
+        - { port: 10249, proto: tcp, comment: "Port for the metrics server to serve on" }
+        - { port: 10250, proto: tcp, comment: "Metrics server communication with all nodes API" }
+        - { port: 10251:10252, proto: tcp, comment: "Port on which to serve HTTP insecurely" }
+        - { port: 10254, proto: tcp, comment: "Ingress controller livenessProbe/readinessProbe" }
+        - { port: 10255, proto: tcp, comment: "Read only port for the Kubelet" }
+        - { port: 10256, proto: tcp, comment: "Port to bind the health check server" }
+        - { port: 10257, proto: tcp, comment: "Kube-controller-manager port" }
+        - { port: 10259, proto: tcp, comment: "Kube-scheduler port" }
+        - { port: 19001, proto: tcp, comment: "SSL encrypted. Client certificates required to connect" }
+        - { port: 25000, proto: tcp, comment: "Proper token required to authorise actions" }
+        - { port: 30000:32767, proto: tcp, comment: "NodePort Services" }
+        - { port: 30000:32767, proto: udp, comment: "NodePort Services" }
 
     - name: Enable UFW
       ufw:
         state: enabled
 
-- hosts: all
-  become: true
-
-  tasks:
     - name: Set hostname to match the inventory name
       ansible.builtin.hostname:
         name: "{{ inventory_hostname }}"
@@ -75,20 +118,6 @@
 
     - name: Apply netplan configuration
       ansible.builtin.command: netplan apply
-
-    - name: Allow Kubernetes control plane ports in UFW
-      ufw:
-        rule: allow
-        port: "{{ item.port }}"
-        proto: tcp
-        comment: "{{ item.comment }}"
-      with_items:
-        - { port: 10250, comment: "Open Kubelet API port" }
-        - { port: 30000:32767, comment: "NodePort Services" }
-
-    - name: Enable UFW
-      ufw:
-        state: enabled
 
     - name: Create a empty file for kubernetes sysctl params.
       copy:
