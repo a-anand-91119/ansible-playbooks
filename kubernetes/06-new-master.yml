@@ -4,7 +4,7 @@
   tasks:
 
     - name: Get the token for joining the new master node with the Kubernetes control plane.
-      shell: kubeadm token create --print-join-command --certificate-key $(kubeadm init phase upload-certs --upload-certs)
+      shell: kubeadm token create --print-join-command --certificate-key $(kubeadm certs certificate-key)
       register: kubernetes_master_join_command
 
     - debug:
