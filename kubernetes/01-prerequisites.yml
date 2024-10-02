@@ -1,5 +1,6 @@
 ---
 - hosts: all
+  name: Disable swap on machines permanently
   become: true
 
   tasks:
@@ -22,3 +23,116 @@
         regexp: '^(\s*)([^#\n]+\s+)(\w+\s+)swap(\s+.*)$'
         replace: '#\1\2\3swap\4'
         backup: yes
+
+- hosts: all
+  name: Install containerd runtime
+  become: true
+
+  tasks:
+    - name: Ensure required packages are installed
+      apt:
+        name:
+          - ca-certificates
+          - curl
+        state: present
+        update_cache: yes
+
+    - name: Configure module for containerd.
+      blockinfile:
+        path: /etc/modules-load.d/containerd.conf
+        block: |
+          overlay
+          br_netfilter
+        create: yes
+
+    - name: Load the overlay module
+      command: modprobe overlay
+
+    - name: Load the br_netfilter module
+      command: modprobe br_netfilter
+
+    - name: Verify that the overlay module is loaded
+      shell: lsmod | grep overlay
+      register: overlay_module
+      changed_when: false
+
+    - name: Verify that the br_netfilter module is loaded
+      shell: lsmod | grep br_netfilter
+      register: br_netfilter_module
+      changed_when: false
+
+    - name: Print overlay module load status
+      debug:
+        msg: "Overlay module loaded: {{ overlay_module.stdout }}"
+
+    - name: Print br_netfilter module load status
+      debug:
+        msg: "br_netfilter module loaded: {{ br_netfilter_module.stdout }}"
+
+    - name: Add Docker’s official GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Create the /etc/apt/keyrings directory for Docker GPG key
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
+
+    - name: Add Docker’s official GPG key
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: '0644'
+
+    - name: Add Docker Repository
+      apt_repository:
+        repo: "deb [arch={{ ansible_architecture }} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        filename: docker
+        state: present
+        update_cache: yes
+
+    - name: "Update cache & Full system update"
+      apt:
+        update_cache: true
+        upgrade: dist
+        cache_valid_time: 3600
+        force_apt_get: true
+
+    - name: Install containerd
+      apt:
+        name:
+          - containerd
+        state: present
+
+    - name: Configure containerd.
+      file:
+        path: /etc/containerd
+        state: directory
+
+    - name: Generate the default containerd configuration
+      shell: |
+        containerd config default | tee /etc/containerd/config.toml
+      args:
+        creates: /etc/containerd/config.toml
+
+    - name: Update SystemdCgroup to true in containerd config
+      lineinfile:
+        path: /etc/containerd/config.toml
+        regexp: '^(\s*SystemdCgroup\s*=\s*)false'
+        line: '            SystemdCgroup = true'
+        backup: yes
+
+    - name: Enable and start containerd service
+      ansible.builtin.systemd:
+        name: containerd
+        enabled: yes
+        state: restarted
+        daemon-reload: yes
+
+    - name: Verify containerd service is running
+      systemd:
+        name: containerd
+        state: started
+        enabled: yes

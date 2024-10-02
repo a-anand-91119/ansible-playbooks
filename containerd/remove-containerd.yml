@@ -1,5 +1,6 @@
 ---
 - hosts: all
+  name: Remove containerd runtime
   become: true
 
   tasks:
