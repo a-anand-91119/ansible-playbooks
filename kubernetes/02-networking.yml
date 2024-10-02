@@ -42,12 +42,11 @@
         - { port: 6783:6784, proto: udp, comment: "Weave UDP Ports" }
         - { port: 6942, proto: tcp, comment: "Cilium operator prometheus port" }
         - { port: 8472, proto: udp, comment: "Canal or Flannel VXLAN overlay networking" }
+        - { port: 9090, proto: tcp, comment: "Cilium prometheus port" }
+        - { port: 9091, proto: tcp, comment: "Cilium hubble prometheus port" }
         - { port: 9099, proto: tcp, comment: "Canal or Flannel livenessProbe or readinessProbe" }
         - { port: 9443, proto: tcp, comment: "Rancher webhook" }
         - { port: 9796, proto: tcp, comment: "Default port required by Monitoring to scrape metrics from Linux and Windows node-exporters" }
-        - { port: 9090, proto: tcp, comment: "Cilium prometheus port" }
-        - { port: 9091, proto: tcp, comment: "Cilium hubble prometheus port" }
-        - { port: 9099, proto: tcp, comment: "Generic Port" }
         - { port: 10248, proto: tcp, comment: "Localhost healthz endpoint" }
         - { port: 10249, proto: tcp, comment: "Port for the metrics server to serve on" }
         - { port: 10250, proto: tcp, comment: "Metrics server communication with all nodes API" }
