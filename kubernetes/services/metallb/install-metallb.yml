@@ -11,8 +11,6 @@
         path: /tmp/metallb
         state: directory
         mode: '0755'
-        owner: root
-        group: root
 
     - name: Create metallb namespace config
       ansible.builtin.copy:
