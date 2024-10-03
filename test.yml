@@ -9,5 +9,5 @@
 
     - name: Basic usage
       ansible.builtin.debug:
-        msg: "{{ lookup('ansible.builtin.env', 'KUBERNETES_VERSION') }}"
+        msg: " kubernetes version <<{{ lookup('ansible.builtin.env', 'KUBERNETES_VERSION') }}>>"
 
