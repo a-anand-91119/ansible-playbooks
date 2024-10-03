@@ -26,3 +26,11 @@
     - name: Basic usage
       ansible.builtin.debug:
         msg: "'{{ lookup('ansible.builtin.env', 'KUBERNETES_VERSION') }}' is the HOME environment variable."
+
+    - name: Basic usage
+      ansible.builtin.debug:
+        msg: "{{ lookup('ansible.builtin.env', 'KUBERNETES_VERSION') }} is the HOME environment variable."
+
+    - name: Basic usage
+      ansible.builtin.debug:
+        msg: '{{ lookup("ansible.builtin.env", "KUBERNETES_VERSION") }} is the HOME environment variable.'
