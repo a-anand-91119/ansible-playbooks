@@ -6,14 +6,6 @@
       register: res
       changed_when: res.rc != 0
 
-    - name: Install MetalLB
-      ansible.builtin.shell: |
-        kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/{{ lookup('ansible.builtin.env', 'METALLB_VERSION') }}/manifests/namespace.yaml
-        kubectl apply -f kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/{{ lookup('ansible.builtin.env', 'METALLB_VERSION') }}/config/manifests/metallb-native.yaml
-        kubectl create secret generic -n metallb-system memberlist --from-literal=secretkey="$(openssl rand -base64 128)"
-      register: res
-      changed_when: res.rc != 0
-
     - name: Ensure /tmp/metallb directory exists
       file:
         path: /tmp/metallb
@@ -21,6 +13,18 @@
         mode: '0755'
         owner: root
         group: root
+
+    - name: Create metallb namespace config
+      ansible.builtin.copy:
+        dest: /tmp/metallb/metallb-namespace.yml
+        content: |
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: metallb-system
+            labels:
+              app: metallb
+        mode: '0644'
 
     - name: Create metallb ip address pool
       ansible.builtin.copy:
@@ -34,8 +38,6 @@
           spec:
             addresses:
               - {{ lookup('ansible.builtin.env', 'METALLB_IP_ADDRESSES') }}
-        owner: root
-        group: root
         mode: '0644'
 
     - name: Create metallb L2 advertise config
@@ -47,9 +49,19 @@
           metadata:
             name: l2adv
             namespace: metallb-system
-        owner: root
-        group: root
         mode: '0644'
+
+    - name: Create MetalLB Namespace
+      ansible.builtin.shell: kubectl apply -f /tmp/metallb/metallb-namespace.yml
+      register: res
+      changed_when: res.rc != 0
+
+    - name: Install MetalLB
+      ansible.builtin.shell: |
+        kubectl apply -f kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/{{ lookup('ansible.builtin.env', 'METALLB_VERSION') }}/config/manifests/metallb-native.yaml
+        kubectl create secret generic -n metallb-system memberlist --from-literal=secretkey="$(openssl rand -base64 128)"
+      register: res
+      changed_when: res.rc != 0
 
     - name: Apply the metallb ip address pool configuration
       ansible.builtin.shell: kubectl apply -f /tmp/metallb/metallb-addr-pool.yml
