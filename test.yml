@@ -10,27 +10,3 @@
     - name: Basic usage
       ansible.builtin.debug:
         msg: " kubernetes version --{{ lookup('ansible.builtin.env', 'KUBERNETES_VERSION') }}--"
-
-    - name: Basic usage 2
-      ansible.builtin.debug:
-        msg: ' kubernetes version --{{ lookup("ansible.builtin.env", "KUBERNETES_VERSION") }}--'
-
-    - name: Debug all env vars
-      debug:
-        var: ansible_env
-
-    - name: Basic usage
-      ansible.builtin.debug:
-        msg: "'{{ lookup('ansible.builtin.env', 'HOME') }}' is the HOME environment variable."
-
-    - name: Basic usage
-      ansible.builtin.debug:
-        msg: "'{{ lookup('ansible.builtin.env', 'KUBERNETES_VERSION') }}' is the HOME environment variable."
-
-    - name: Basic usage
-      ansible.builtin.debug:
-        msg: "{{ lookup('ansible.builtin.env', 'KUBERNETES_VERSION') }} is the HOME environment variable."
-
-    - name: Basic usage
-      ansible.builtin.debug:
-        msg: '{{ lookup("ansible.builtin.env", "KUBERNETES_VERSION") }} is the HOME environment variable.'
