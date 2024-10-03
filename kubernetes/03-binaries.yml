@@ -22,7 +22,7 @@
 
     - name: Download Kubernetes GPG key
       get_url:
-        url: https://pkgs.k8s.io/core:/stable:/{{ lookup('anisble.builtin.env', 'KUBERNETES_VERSION') }}/deb/Release.key
+        url: https://pkgs.k8s.io/core:/stable:/{{ lookup('ansible.builtin.env', 'KUBERNETES_VERSION') }}/deb/Release.key
         dest: /etc/apt/keyrings/kubernetes-release-key.gpg
         mode: '0644'
 
@@ -34,7 +34,7 @@
     - name: Add Kubernetes apt repository
       copy:
         dest: /etc/apt/sources.list.d/kubernetes.list
-        content: 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/{{ lookup("anisble.builtin.env", "KUBERNETES_VERSION") }}/deb/ /'
+        content: 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/{{ lookup("ansible.builtin.env", "KUBERNETES_VERSION") }}/deb/ /'
         owner: root
         group: root
         mode: '0644'
