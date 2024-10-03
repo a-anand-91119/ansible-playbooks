@@ -91,12 +91,6 @@
         group: root
         mode: '0644'
 
-    - name: Set static IP configuration variables
-      ansible.builtin.set_fact:
-        ip_address: "{{ hostvars[inventory_hostname]['ip_address'] }}"
-        gateway: "{{ hostvars[inventory_hostname]['gateway'] }}"
-        nameservers: "{{ hostvars[inventory_hostname]['nameservers'] }}"
-
     - name: Create netplan config for static IP
       ansible.builtin.copy:
         dest: /etc/netplan/00_installer_config.yaml
@@ -107,10 +101,10 @@
             ethernets:
               enp1s0:
                 addresses:
-                  - {{ ip_address }}/24
-                gateway4: {{ gateway }}
+                  - {{ hostvars[inventory_hostname]['ip_address'] }}/24
+                gateway4: {{ hostvars[inventory_hostname]['gateway'] }}
                 nameservers:
-                  addresses: {{ nameservers }}
+                  addresses: {{ hostvars[inventory_hostname]['nameservers'] }}
         owner: root
         group: root
         mode: '0644'
