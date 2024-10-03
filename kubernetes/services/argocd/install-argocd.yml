@@ -1,0 +1,13 @@
+---
+- hosts: control_plane
+  tasks:
+    - name: Create Argo CD namespace
+      command: kubectl create namespace argocd
+      ignore_errors: yes
+
+    - name: Install Argo CD using the official manifests
+      command: kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+
+    - name: Patch the Argo CD server service to use LoadBalancer
+      command: |
+        kubectl patch svc argocd-server -n argocd -p '{"spec": { "type": "LoadBalancer" } }'
