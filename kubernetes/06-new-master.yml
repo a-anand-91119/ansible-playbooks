@@ -54,7 +54,7 @@
     - name: Copy CA certificates and keys to new master node
       copy:
         src: "/tmp/certificates/control_plane/"
-        dest: "/home/{{ user }}/"
+        dest: "/home/{{ ansible_user }}/"
         mode: 0644
       with_items:
         - ca.crt
@@ -77,21 +77,21 @@
     - name: Move copied certificates to correct locations on new master node
       block:
           - name: Move CA certificate to /etc/kubernetes/pki
-            command: mv /home/{{ user }}/ca.crt /etc/kubernetes/pki/
+            command: mv /home/{{ ansible_user }}/ca.crt /etc/kubernetes/pki/
           - name: Move CA key to /etc/kubernetes/pki
-            command: mv /home/{{ user }}/ca.key /etc/kubernetes/pki/
+            command: mv /home/{{ ansible_user }}/ca.key /etc/kubernetes/pki/
           - name: Move SA key to /etc/kubernetes/pki
-            command: mv /home/{{ user }}/sa.key /etc/kubernetes/pki/
+            command: mv /home/{{ ansible_user }}/sa.key /etc/kubernetes/pki/
           - name: Move SA public key to /etc/kubernetes/pki
-            command: mv /home/{{ user }}/sa.pub /etc/kubernetes/pki/
+            command: mv /home/{{ ansible_user }}/sa.pub /etc/kubernetes/pki/
           - name: Move Front Proxy CA certificate to /etc/kubernetes/pki
-            command: mv /home/{{ user }}/front-proxy-ca.crt /etc/kubernetes/pki/
+            command: mv /home/{{ ansible_user }}/front-proxy-ca.crt /etc/kubernetes/pki/
           - name: Move Front Proxy CA key to /etc/kubernetes/pki
-            command: mv /home/{{ user }}/front-proxy-ca.key /etc/kubernetes/pki/
+            command: mv /home/{{ ansible_user }}/front-proxy-ca.key /etc/kubernetes/pki/
           - name: Move etcd CA certificate to /etc/kubernetes/pki/etcd
-            command: mv /home/{{ user }}/etcd-ca.crt /etc/kubernetes/pki/etcd/ca.crt
+            command: mv /home/{{ ansible_user }}/etcd-ca.crt /etc/kubernetes/pki/etcd/ca.crt
           - name: Move etcd CA key to /etc/kubernetes/pki/etcd
-            command: mv /home/{{ user }}/etcd-ca.key /etc/kubernetes/pki/etcd/ca.key
+            command: mv /home/{{ ansible_user }}/etcd-ca.key /etc/kubernetes/pki/etcd/ca.key
 
     - name: Join the new master node to the control plane
       command: sh /tmp/kubernetes_master_join_command
