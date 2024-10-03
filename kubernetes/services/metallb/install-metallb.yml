@@ -12,18 +12,6 @@
         state: directory
         mode: '0755'
 
-    - name: Create metallb namespace config
-      ansible.builtin.copy:
-        dest: /tmp/metallb/metallb-namespace.yml
-        content: |
-          apiVersion: v1
-          kind: Namespace
-          metadata:
-            name: metallb-system
-            labels:
-              app: metallb
-        mode: '0644'
-
     - name: Create metallb ip address pool
       ansible.builtin.copy:
         dest: /tmp/metallb/metallb-addr-pool.yml
@@ -49,14 +37,9 @@
             namespace: metallb-system
         mode: '0644'
 
-    - name: Create MetalLB Namespace
-      ansible.builtin.shell: kubectl apply -f /tmp/metallb/metallb-namespace.yml
-      register: res
-      changed_when: res.rc != 0
-
     - name: Install MetalLB
       ansible.builtin.shell: |
-        kubectl apply -f kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/{{ lookup('ansible.builtin.env', 'METALLB_VERSION') }}/config/manifests/metallb-native.yaml
+        kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/{{ lookup('ansible.builtin.env', 'METALLB_VERSION') }}/config/manifests/metallb-native.yaml
         kubectl create secret generic -n metallb-system memberlist --from-literal=secretkey="$(openssl rand -base64 128)"
       register: res
       changed_when: res.rc != 0
