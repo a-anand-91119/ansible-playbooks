@@ -3,8 +3,16 @@
   become: true
   tasks:
 
+    - name: Generate a certificate key for joining new control plane node
+      shell: kubeadm certs certificate-key
+      register: certificate_key
+
+    - name: Upload certificates to the Kubernetes cluster using the certificate key
+      shell: kubeadm init phase upload-certs --upload-certs --certificate-key {{ certificate_key.stdout | trim }}
+      register: upload_certs_output
+
     - name: Get the token for joining the new master node with the Kubernetes control plane.
-      shell: kubeadm token create --print-join-command --certificate-key $(kubeadm certs certificate-key)
+      shell: kubeadm token create --print-join-command --certificate-key {{ certificate_key.stdout | trim }}
       register: kubernetes_master_join_command
 
     - debug:
