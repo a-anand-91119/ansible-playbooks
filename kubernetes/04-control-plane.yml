@@ -8,7 +8,7 @@
 
     - name: Download runc binary
       ansible.builtin.get_url:
-        url: https://github.com/opencontainers/runc/releases/download/v1.1.12/runc.amd64
+        url: https://github.com/opencontainers/runc/releases/download/{{ lookup('anisble.builtin.env', 'RUNC_VERSION') }}/runc.amd64
         dest: /tmp/runc.amd64
         mode: '0755'
 
@@ -24,7 +24,7 @@
       shell: |
         kubeadm init \
         --apiserver-advertise-address={{ ip_address }} \
-        --pod-network-cidr=10.244.0.0/16 \
+        --pod-network-cidr={{ lookup('ansible.builtin.env', 'POD_NETWORK_CIDR') }} \
         --control-plane-endpoint={{ ip_address }}:6443 \
         --v=5
       args:
@@ -73,7 +73,7 @@
       ansible.builtin.replace:
         path: /tmp/custom-resources.yaml
         regexp: 'cidr: 192\.168\.0\.0/16'
-        replace: 'cidr: 10.244.0.0/16'
+        replace: "cidr: {{ lookup('ansible.builtin.env', 'POD_NETWORK_CIDR') }}"
 
     - name: Apply Custom Resources manifest using kubectl
       shell: kubectl apply -f /tmp/custom-resources.yaml
