@@ -6,7 +6,7 @@
       ignore_errors: yes
 
     - name: Install Argo CD using the official manifests
-      command: kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/refs/heads/stable/manifests/ha/install.yaml
+      command: kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/refs/heads/master/manifests/ha/install.yaml
 
     - name: Patch the Argo CD server service to use LoadBalancer
       command: |
