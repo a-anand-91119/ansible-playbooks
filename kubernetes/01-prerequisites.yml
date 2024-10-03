@@ -4,6 +4,17 @@
   become: true
 
   tasks:
+    - name: Create symbolic link to disable runc AppArmor profile
+      file:
+        src: /etc/apparmor.d/runc
+        dest: /etc/apparmor.d/disable/runc
+        state: link
+        force: yes
+
+    - name: Unload the runc AppArmor profile
+      command: apparmor_parser -R /etc/apparmor.d/runc
+      ignore_errors: yes
+
     - name: Remove swapfile from /etc/fstab
       mount:
         name: "{{ item }}"
