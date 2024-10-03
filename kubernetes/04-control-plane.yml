@@ -61,12 +61,12 @@
         var: cluster_info
 
     - name: Create Calico Operator using kubectl
-      shell: kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.28.0/manifests/tigera-operator.yaml --validate=false
+      shell: kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/{{ lookup('ansible.builtin.env', 'CALICO_VERSION') }}/manifests/tigera-operator.yaml --validate=false
       register: tigera_operator_output
 
     - name: Download Calico Custom Resources manifest
       ansible.builtin.get_url:
-        url: https://raw.githubusercontent.com/projectcalico/calico/v3.28.0/manifests/custom-resources.yaml
+        url: https://raw.githubusercontent.com/projectcalico/calico/{{ lookup('ansible.builtin.env', 'CALICO_VERSION') }}/manifests/custom-resources.yaml
         dest: /tmp/custom-resources.yaml
 
     - name: Change cidr value in the custom-resources.yaml
