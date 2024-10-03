@@ -24,7 +24,7 @@
     - name: Fetch CA certificates and keys from control plane
       fetch:
         src: "{{ item.src }}"
-        dest: "/tmp/certificates/{{ inventory_hostname }}/{{ item.dest }}"
+        dest: "/tmp/certificates/control_plane/{{ item.dest }}"
         flat: yes
       loop:
         - { src: '/etc/kubernetes/pki/ca.crt', dest: 'ca.crt' }
