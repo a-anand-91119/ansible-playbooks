@@ -60,37 +60,37 @@
       debug:
         var: cluster_info
 
-    - name: Install Pod Network
-      shell: kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml
-      register: pod_network_output
+#    - name: Install Pod Network
+#      shell: kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml
+#      register: pod_network_output
+#
+#    - name: Ensure Pod Network created successfully
+#      debug:
+#        msg: "{{ pod_network_output.stdout }}"
 
-    - name: Ensure Pod Network created successfully
+    - name: Create Calico Operator using kubectl
+      shell: kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.28.0/manifests/tigera-operator.yaml --validate=false
+      register: tigera_operator_output
+
+    - name: Download Calico Custom Resources manifest
+      ansible.builtin.get_url:
+        url: https://raw.githubusercontent.com/projectcalico/calico/v3.28.0/manifests/custom-resources.yaml
+        dest: /tmp/custom-resources.yaml
+
+    - name: Change cidr value in the custom-resources.yaml
+      ansible.builtin.replace:
+        path: /tmp/custom-resources.yaml
+        regexp: 'cidr: 192\.168\.0\.0/16'
+        replace: 'cidr: 10.244.0.0/16'
+
+    - name: Apply Custom Resources manifest using kubectl
+      shell: kubectl apply -f /tmp/custom-resources.yaml
+      register: calico_custom_resources_output
+
+    - name: Ensure Tigera Operator was created successfully
       debug:
-        msg: "{{ pod_network_output.stdout }}"
+        msg: "{{ tigera_operator_output.stdout }}"
 
-#    - name: Create Calico Operator using kubectl
-#      shell: kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.28.0/manifests/tigera-operator.yaml --validate=false
-#      register: tigera_operator_output
-#
-#    - name: Download Calico Custom Resources manifest
-#      ansible.builtin.get_url:
-#        url: https://raw.githubusercontent.com/projectcalico/calico/v3.28.0/manifests/custom-resources.yaml
-#        dest: /tmp/custom-resources.yaml
-#
-#    - name: Change cidr value in the custom-resources.yaml
-#      ansible.builtin.replace:
-#        path: /tmp/custom-resources.yaml
-#        regexp: 'cidr: 192\.168\.0\.0/16'
-#        replace: 'cidr: 10.244.0.0/16'
-#
-#    - name: Apply Custom Resources manifest using kubectl
-#      shell: kubectl apply -f /tmp/custom-resources.yaml
-#      register: calico_custom_resources_output
-#
-#    - name: Ensure Tigera Operator was created successfully
-#      debug:
-#        msg: "{{ tigera_operator_output.stdout }}"
-#
-#    - name: Ensure Calico Custom Resources applied successfully
-#      debug:
-#        msg: "{{ calico_custom_resources_output.stdout }}"
+    - name: Ensure Calico Custom Resources applied successfully
+      debug:
+        msg: "{{ calico_custom_resources_output.stdout }}"
