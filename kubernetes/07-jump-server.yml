@@ -1,0 +1,24 @@
+---
+- hosts: control_plane
+  tasks:
+    - name: Copy kube config file from control_plane to local Ansible server
+      fetch:
+        src: "/home/admin/.kube/config"
+        dest: "/tmp/kube_config"
+        flat: yes
+
+- hosts: jump_server
+  tasks:
+
+    - name: Create .kube directory
+      become: true
+      become_user: admin
+      file:
+        path: $HOME/.kube
+        state: directory
+        mode: 0755
+
+    - name: Copy the kube config to the jump server
+      copy:
+        src: /tmp/kube_config
+        dest: $HOME/.kube/config
