@@ -7,8 +7,6 @@
       shell: "helm repo add longhorn https://charts.longhorn.io"
       args:
         creates: ~/.cache/helm/repository/longhorn-index.yaml
-      register: helm_repo_add_output
-      changed_when: "'Repository 'longhorn' already exists' not in helm_repo_add_output.stdout"
 
     - name: Update Helm repositories
       shell: "helm repo update"
