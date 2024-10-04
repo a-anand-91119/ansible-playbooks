@@ -25,19 +25,29 @@
       shell: linkerd version
       register: linkerd_version_output
       failed_when: "'Server version: unavailable' not in linkerd_version_output.stdout"
+      args:
+        executable: /bin/bash
 
     - name: Check if Linkerd prerequisites are met in the Kubernetes cluster
       shell: linkerd check --pre
       register: linkerd_check_output
       failed_when: "'Status check results are' not in linkerd_check_output.stdout"
+      args:
+        executable: /bin/bash
 
     - name: Install Linkerd CRDs
       shell: linkerd install --crds | kubectl apply -f -
+      args:
+        executable: /bin/bash
 
     - name: Install Linkerd control plane
       shell: linkerd install | kubectl apply -f -
+      args:
+        executable: /bin/bash
 
     - name: Wait for Linkerd installation to be ready
       shell: linkerd check
       register: linkerd_install_check_output
       failed_when: "'Status check results are' not in linkerd_install_check_output.stdout"
+      args:
+        executable: /bin/bash
