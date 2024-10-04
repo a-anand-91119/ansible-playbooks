@@ -22,7 +22,7 @@
       shell: "export PATH=$HOME/.linkerd2/bin:$PATH"
 
     - name: Verify Linkerd CLI installation
-      shell: linkerd version
+      shell: $HOME/.linkerd2/bin/linkerd version
       register: linkerd_version_output
       failed_when: "'Server version: unavailable' not in linkerd_version_output.stdout"
 
