@@ -1,0 +1,41 @@
+- hosts: jump_server
+  name: "Tnstall Linkerd CLI and Setup on Kubernetes Cluster"
+  tasks:
+    - name: Download and install Linkerd CLI
+      shell: |
+        curl --proto '=https' --tlsv1.2 -sSfL https://run.linkerd.io/install-edge | sh
+      args:
+        creates: "{{ ansible_env.HOME }}/.linkerd2/bin/linkerd"
+      environment:
+        PATH: "{{ ansible_env.HOME }}/.linkerd2/bin:{{ ansible_env.PATH }}"
+
+    - name: Add Linkerd CLI to PATH permanently
+      lineinfile:
+        path: ~/.bashrc
+        regexp: '^export PATH=.*linkerd2/bin'
+        line: 'export PATH=$HOME/.linkerd2/bin:$PATH'
+        state: present
+
+    - name: Source bashrc to update PATH
+      shell: source ~/.bashrc
+
+    - name: Verify Linkerd CLI installation
+      shell: linkerd version
+      register: linkerd_version_output
+      failed_when: "'Server version: unavailable' not in linkerd_version_output.stdout"
+
+    - name: Check if Linkerd prerequisites are met in the Kubernetes cluster
+      shell: linkerd check --pre
+      register: linkerd_check_output
+      failed_when: "'Status check results are' not in linkerd_check_output.stdout"
+
+    - name: Install Linkerd CRDs
+      shell: linkerd install --crds | kubectl apply -f -
+
+    - name: Install Linkerd control plane
+      shell: linkerd install | kubectl apply -f -
+
+    - name: Wait for Linkerd installation to be ready
+      shell: linkerd check
+      register: linkerd_install_check_output
+      failed_when: "'Status check results are' not in linkerd_install_check_output.stdout"
