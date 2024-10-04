@@ -2,7 +2,6 @@
   name: "Install Linkerd CLI and Setup on Kubernetes Cluster"
 
   tasks:
-    -
     - name: Download and install Linkerd CLI
       shell: |
         curl --proto '=https' --tlsv1.2 -sSfL https://run.linkerd.io/install-edge | sh
