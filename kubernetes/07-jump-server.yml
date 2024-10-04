@@ -23,3 +23,4 @@
       copy:
         src: /tmp/kube_config
         dest: $HOME/.kube/config
+        mode: 0600

@@ -1,0 +1,38 @@
+- hosts: jump_server
+  name: "Install Helm"
+
+  tasks:
+
+    - name: Add the Longhorn Helm repository
+      shell: "helm repo add longhorn https://charts.longhorn.io"
+      args:
+        creates: ~/.cache/helm/repository/longhorn-index.yaml
+      register: helm_repo_add_output
+      changed_when: "'Repository 'longhorn' already exists' not in helm_repo_add_output.stdout"
+
+    - name: Update Helm repositories
+      shell: "helm repo update"
+      register: helm_repo_update_output
+
+    - name: Install Longhorn in the longhorn-system namespace
+      shell: |
+        helm install longhorn longhorn/longhorn \
+          --namespace longhorn-system \
+          --create-namespace \
+          --version {{ lookup('ansible.builtin.env', 'LONGHORN_VERSION') }}
+      register: helm_install_output
+      changed_when: "'release: installed' in helm_install_output.stdout"
+
+    - name: Verify Longhorn installation by checking pods
+      shell: "kubectl -n longhorn-system get pod"
+      register: longhorn_pods_output
+
+    - name: Display running Longhorn pods
+      debug:
+        var: longhorn_pods_output.stdout
+
+    - name: Verify if Longhorn pods are running
+      assert:
+        that:
+          - "'Running' in longhorn_pods_output.stdout"
+        fail_msg: "Longhorn installation failed: some pods are not running."
