@@ -19,7 +19,7 @@
         state: present
 
     - name: Source bashrc to update PATH
-      shell: source ~/.bashrc
+      shell: bash -lc "source ~/.bashrc"
 
     - name: Verify Linkerd CLI installation
       shell: linkerd version
