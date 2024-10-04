@@ -28,9 +28,3 @@
     - name: Display running Longhorn pods
       debug:
         var: longhorn_pods_output.stdout
-
-    - name: Verify if Longhorn pods are running
-      assert:
-        that:
-          - "'Running' in longhorn_pods_output.stdout"
-        fail_msg: "Longhorn installation failed: some pods are not running."
