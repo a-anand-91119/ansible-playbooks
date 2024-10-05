@@ -24,6 +24,7 @@
       shell: |
         kubeadm init \
         --apiserver-advertise-address={{ ip_address }} \
+        --apiserver-cert-extra-sans=100.76.38.33 \
         --pod-network-cidr={{ lookup('ansible.builtin.env', 'POD_NETWORK_CIDR') }} \
         --control-plane-endpoint={{ ip_address }}:6443 \
         --v=5
