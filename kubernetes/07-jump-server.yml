@@ -1,55 +1,52 @@
 ---
 - hosts: control_plane
-  gather_facts: false
   tasks:
     - name: Copy kube config file from control_plane to local Ansible server
       fetch:
         src: "/home/admin/.kube/config"
         dest: "/tmp/kube_config"
         flat: yes
-
-- hosts: jump_server
-  name: "Setup jump server"
-  gather_facts: false
-
-  tasks:
-
-    - name: Create keyrings directory
-      file:
-        path: /usr/share/keyrings
-        state: directory
-        mode: '0755'
-
-    - name: Add Cloudflare GPG key
-      ansible.builtin.get_url:
-        url: https://pkg.cloudflare.com/cloudflare-main.gpg
-        dest: /usr/share/keyrings/cloudflare-main.gpg
-        mode: '0644'
-
-    - name: Add Cloudflare repository
-      ansible.builtin.apt_repository:
-        repo: 'deb [arch={{ ansible_architecture }} signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared {{ ansible_distribution_release }} main'
-        filename: 'cloudflared'
-        state: present
-
-    - name: Install required packages for maintenance in jump server
-      apt:
-        name:
-          - nfs-common
-          - cloudflared
-        state: present
-        update_cache: yes
-
-    - name: Create .kube directory
-      become: true
-      become_user: admin
-      file:
-        path: $HOME/.kube
-        state: directory
-        mode: 0755
-
-    - name: Copy the kube config to the jump server
-      copy:
-        src: /tmp/kube_config
-        dest: $HOME/.kube/config
-        mode: 0600
+#
+#- hosts: jump_server
+#  name: "Setup jump server"
+#  tasks:
+#
+#    - name: Create keyrings directory
+#      file:
+#        path: /usr/share/keyrings
+#        state: directory
+#        mode: '0755'
+#
+#    - name: Add Cloudflare GPG key
+#      ansible.builtin.get_url:
+#        url: https://pkg.cloudflare.com/cloudflare-main.gpg
+#        dest: /usr/share/keyrings/cloudflare-main.gpg
+#        mode: '0644'
+#
+#    - name: Add Cloudflare repository
+#      ansible.builtin.apt_repository:
+#        repo: 'deb [arch={{ ansible_architecture }} signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared {{ ansible_distribution_release }} main'
+#        filename: 'cloudflared'
+#        state: present
+#
+#    - name: Install required packages for maintenance in jump server
+#      apt:
+#        name:
+#          - nfs-common
+#          - cloudflared
+#        state: present
+#        update_cache: yes
+#
+#    - name: Create .kube directory
+#      become: true
+#      become_user: admin
+#      file:
+#        path: $HOME/.kube
+#        state: directory
+#        mode: 0755
+#
+#    - name: Copy the kube config to the jump server
+#      copy:
+#        src: /tmp/kube_config
+#        dest: $HOME/.kube/config
+#        mode: 0600
