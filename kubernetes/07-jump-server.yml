@@ -8,8 +8,34 @@
         flat: yes
 
 - hosts: jump_server
-  name: "Setup kubectl in jump server"
+  name: "Setup jump server"
   tasks:
+
+    - name: Create keyrings directory
+      file:
+        path: /usr/share/keyrings
+        state: directory
+        mode: '0755'
+
+    - name: Add Cloudflare GPG key
+      ansible.builtin.get_url:
+        url: https://pkg.cloudflare.com/cloudflare-main.gpg
+        dest: /usr/share/keyrings/cloudflare-main.gpg
+        mode: '0644'
+
+    - name: Add Cloudflare repository
+      ansible.builtin.apt_repository:
+        repo: 'deb [arch={{ ansible_architecture }} signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared {{ ansible_distribution_release }} main'
+        filename: 'cloudflared'
+        state: present
+
+    - name: Install required packages for maintenance in jump server
+      apt:
+        name:
+          - nfs-common
+          - cloudflared
+        state: present
+        update_cache: yes
 
     - name: Create .kube directory
       become: true
