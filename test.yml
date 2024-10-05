@@ -1,5 +1,5 @@
 ---
-- hosts: jump_server
+- hosts: all
 
   tasks:
     - name: Ping server
