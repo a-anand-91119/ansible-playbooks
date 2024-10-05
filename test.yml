@@ -1,7 +1,5 @@
 ---
-- hosts: all
-  gather_facts: False
-  connection: local
+- hosts: jump_server
 
   tasks:
     - name: Ping server
