@@ -1,4 +1,0 @@
-cryptography
-pyopenssl
-cffi
-six
