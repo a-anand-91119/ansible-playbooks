@@ -30,6 +30,7 @@
 #        state: present
 
     - name: Install required packages for maintenance in jump server
+      become: true
       apt:
         name:
           - nfs-common
