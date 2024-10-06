@@ -45,6 +45,8 @@
           - htop
           - git
           - ufw
+          - unzip
+          - zip
         state: latest
         update_cache: true
     
