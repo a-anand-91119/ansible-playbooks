@@ -12,6 +12,7 @@
   tasks:
 
     - name: Allow Kubernetes control plane ports in UFW
+      become: true
       ufw:
         rule: allow
         port: "{{ item.port }}"
