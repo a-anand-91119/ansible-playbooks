@@ -28,3 +28,42 @@
     - name: Display running Longhorn pods
       debug:
         var: longhorn_pods_output.stdout
+
+    - name: Create basic auth file
+      shell: |
+        echo "{{ lookup('ansible.builtin.env', 'LONGHORN_BASIC_AUTH_USER') }}:$(openssl passwd -stdin -apr1 <<< {{ lookup('ansible.builtin.env', 'LONGHORN_BASIC_AUTH_PASSWORD') }})" > /tmp/auth
+      args:
+        executable: /bin/bash
+
+    - name: Create Kubernetes secret for basic-auth
+      shell: kubectl -n longhorn-system create secret generic basic-auth --from-file=/tmp/auth
+
+    - name: Create Longhorn Ingress manifest
+      copy:
+        dest: /tmp/longhorn-ingress.yml
+        content: |
+          apiVersion: networking.k8s.io/v1
+          kind: Ingress
+          metadata:
+            name: longhorn-ingress
+            namespace: longhorn-system
+            annotations:
+              nginx.ingress.kubernetes.io/auth-type: basic
+              nginx.ingress.kubernetes.io/ssl-redirect: 'false'
+              nginx.ingress.kubernetes.io/auth-secret: basic-auth
+              nginx.ingress.kubernetes.io/auth-realm: 'Authentication Required'
+              nginx.ingress.kubernetes.io/proxy-body-size: 10000m
+          spec:
+            rules:
+            - http:
+                paths:
+                - pathType: Prefix
+                  path: "/"
+                  backend:
+                    service:
+                      name: longhorn-frontend
+                      port:
+                        number: 80
+
+    - name: Apply Longhorn Ingress manifest
+      shell: kubectl -n longhorn-system apply -f /tmp/longhorn-ingress.yml
