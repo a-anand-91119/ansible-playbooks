@@ -1,0 +1,19 @@
+[control_plane]
+kmaster1 ansible_host=192.168.0.142 ip_address=192.168.0.142
+
+[workers]
+kworker1 ansible_host=192.168.0.145 ip_address=192.168.0.145
+kworker2 ansible_host=192.168.0.106 ip_address=192.168.0.106
+kworker3 ansible_host=192.168.0.130 ip_address=192.168.0.130
+
+[new_master]
+kmaster2 ansible_host=192.168.0.128 ip_address=192.168.0.128
+
+[jump_server]
+jump-server ansible_host=192.168.0.141 ip_address=192.168.0.141
+
+[all:vars]
+ansible_python_interpreter=/usr/bin/python3.12
+nameservers=["192.168.0.100","192.168.1.100"]
+gateway=192.168.0.1
+ansible_ssh_common_args='-o StrictHostKeyChecking=no'
