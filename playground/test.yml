@@ -1,5 +1,5 @@
 ---
-- hosts: all
+- hosts: control_plane, workers
   vars:
 
   tasks:
@@ -29,6 +29,6 @@
         node-role.kubernetes.io/{{ node_role }}= 
         cpu={{ num_cores }}
         ram={{ total_memory }}MB
-      delegate_to: "{{ groups['jump_server'][0] }}"
+      delegate_to: "{{ groups['control_plane'][0] }}"
       when: ansible_processor_vcpus is defined and ansible_memtotal_mb is defined
 
