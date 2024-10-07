@@ -35,16 +35,16 @@
         hosts_file_content: |
           {{ default_hosts_content }}
           {% for host in groups['control_plane'] %}
-          {{ hostvars[host].ip_address }} {{ host }} {{ hostvars[host].ansible_host }}
+          {{ hostvars[host].ip_address }} {{ host }}
           {% endfor %}
           {% for host in groups['workers'] %}
-          {{ hostvars[host].ip_address }} {{ host }} {{ hostvars[host].ansible_host }}
+          {{ hostvars[host].ip_address }} {{ host }}
           {% endfor %}
           {% for host in groups['new_master'] %}
-          {{ hostvars[host].ip_address }} {{ host }} {{ hostvars[host].ansible_host }}
+          {{ hostvars[host].ip_address }} {{ host }}
           {% endfor %}
           {% for host in groups['jump_server'] %}
-          {{ hostvars[host].ip_address }} {{ host }} {{ hostvars[host].ansible_host }}
+          {{ hostvars[host].ip_address }} {{ host }}
           {% endfor %}
 
     - name: Write the new /etc/hosts file
