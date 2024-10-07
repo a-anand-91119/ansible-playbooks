@@ -3,6 +3,11 @@
   vars:
 
   tasks:
+    - name: Debug the applied labels
+      debug:
+        msg: "devices {{ ansible_devices }}"
+
+
     - name: Get the node role (master or worker)
       set_fact:
         node_role: "{{ 'master' if inventory_hostname in groups['control_plane'] else 'worker' }}"
