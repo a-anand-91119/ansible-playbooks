@@ -16,17 +16,13 @@
       ansible.builtin.command:
         cmd: install -m 755 /tmp/runc.amd64 /usr/local/sbin/runc
 
-    - name: Fetch and store node ip address
-      ansible.builtin.set_fact:
-        ip_address: "{{ hostvars[inventory_hostname]['ip_address'] }}"
-
     - name: Run kubeadm init with control plane endpoint
       shell: |
         kubeadm init \
-        --apiserver-advertise-address={{ ip_address }} \
+        --apiserver-advertise-address={{ hostvars[inventory_hostname]['ansible_host'] }} \
         --apiserver-cert-extra-sans={{ lookup('ansible.builtin.env', 'TAILSCALE_JUMP_SERVER_VPN_IP') }} \
         --pod-network-cidr={{ lookup('ansible.builtin.env', 'POD_NETWORK_CIDR') }} \
-        --control-plane-endpoint={{ ip_address }}:6443 \
+        --control-plane-endpoint={{ hostvars[inventory_hostname]['ansible_host'] }}:6443 \
         --v=5
       args:
         executable: /bin/bash
