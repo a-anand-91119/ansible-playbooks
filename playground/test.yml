@@ -22,6 +22,7 @@
         msg: " kubernetes version --{{ lookup('ansible.builtin.env', 'KUBERNETES_VERSION') }}--"
 
     - name: Take a backup of the existing /etc/hosts file
+      become: true
       ansible.builtin.copy:
         src: /etc/hosts
         dest: /etc/hosts.bak
@@ -46,14 +47,11 @@
           {{ hostvars[host].ip_address }} {{ host }} {{ hostvars[host].ansible_host }}
           {% endfor %}
 
-    - name: Basic usage
-      ansible.builtin.debug:
-        msg: "{{ hosts_file_content }}"
-
-#    - name: Write the new /etc/hosts file
-#      ansible.builtin.copy:
-#        content: "{{ hosts_file_content }}"
-#        dest: /etc/hosts
-#        owner: root
-#        group: root
-#        mode: '0644'
+    - name: Write the new /etc/hosts file
+      become: true
+      ansible.builtin.copy:
+        content: "{{ hosts_file_content }}"
+        dest: /etc/hosts.test
+        owner: root
+        group: root
+        mode: '0644'
