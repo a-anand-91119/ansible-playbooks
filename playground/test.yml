@@ -1,13 +1,12 @@
 ---
 - hosts: all
   vars:
-    vars:
-      disk_type: "{{ 'ssd' if ansible_devices['sda'].rotational == '0' else 'hdd' }}"
 
   tasks:
     - name: Get the node role (master or worker)
       set_fact:
         node_role: "{{ 'master' if inventory_hostname in groups['control_plane'] else 'worker' }}"
+        disk_type: "{{ 'ssd' if ansible_devices['sda'].rotational == '0' else 'hdd' }}"
 
     - name: Gather number of CPU cores
       set_fact:
@@ -17,9 +16,9 @@
       set_fact:
         total_memory: "{{ ansible_memtotal_mb }}"
 
-    - name: Basic usage
-      ansible.builtin.debug:
-        msg: "hostname= {{ inventory_hostname }} Node Role: {{ node_role }} disk={{ disk_type }} cpu={{ num_cores }} ram={{ total_memory }}MB"
+    - name: Debug the applied labels
+      debug:
+        msg: "Node {{ inventory_hostname }} labeled with: role={{ node_role }}, disk={{ disk_type }}, cpu={{ num_cores }}, ram={{ total_memory }}MB"
 
     - name: Basic usage
       ansible.builtin.debug:
