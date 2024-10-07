@@ -1,5 +1,7 @@
 ---
 - hosts: all
+  vars:
+    localhost_entry: "127.0.0.1 localhost"
 
   tasks:
     - name: Ping server
@@ -8,3 +10,32 @@
     - name: Basic usage
       ansible.builtin.debug:
         msg: " kubernetes version --{{ lookup('ansible.builtin.env', 'KUBERNETES_VERSION') }}--"
+
+    - name: Build the hosts file content
+      set_fact:
+        hosts_file_content: |
+          {{ localhost_entry }}
+          {% for host in groups['control_plane'] %}
+          {{ hostvars[host].ip_address }} {{ host }} {{ hostvars[host].ansible_host }}
+          {% endfor %}
+          {% for host in groups['workers'] %}
+          {{ hostvars[host].ip_address }} {{ host }} {{ hostvars[host].ansible_host }}
+          {% endfor %}
+          {% for host in groups['new_master'] %}
+          {{ hostvars[host].ip_address }} {{ host }} {{ hostvars[host].ansible_host }}
+          {% endfor %}
+          {% for host in groups['jump_server'] %}
+          {{ hostvars[host].ip_address }} {{ host }} {{ hostvars[host].ansible_host }}
+          {% endfor %}
+
+    - name: Basic usage
+      ansible.builtin.debug:
+        msg: "{{ hosts_file_content }}"
+
+#    - name: Write the new /etc/hosts file
+#      ansible.builtin.copy:
+#        content: "{{ hosts_file_content }}"
+#        dest: /etc/hosts
+#        owner: root
+#        group: root
+#        mode: '0644'
