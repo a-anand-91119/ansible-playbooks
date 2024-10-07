@@ -34,3 +34,23 @@
         src: /tmp/kube_config
         dest: $HOME/.kube/config
         mode: 0600
+
+- hosts: jump_server
+  name: "Install Helm"
+
+  tasks:
+    - name: Download the Helm install script
+      get_url:
+        url: https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+        dest: /tmp/get_helm.sh
+        mode: '0700'
+
+    - name: Run the Helm install script
+      shell: ./get_helm.sh
+      args:
+        chdir: /tmp
+
+    - name: Verify Helm installation
+      shell: "helm version"
+      register: helm_version_output
+      changed_when: false
