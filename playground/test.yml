@@ -5,7 +5,7 @@
   tasks:
     - name: Get the node role (master or worker)
       set_fact:
-        node_role: "{{ 'master' if inventory_hostname in groups['control_plane'] or if inventory_hostname in groups['new_master'] else 'worker' }}"
+        node_role: "{{ 'master' if inventory_hostname in groups['control_plane'] or inventory_hostname in groups['new_master'] else 'worker' }}"
 
     - name: Gather number of CPU cores
       set_fact:
