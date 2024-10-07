@@ -1,7 +1,6 @@
 ---
 - hosts: all
   vars:
-    localhost_entry: "127.0.0.1 localhost"
     default_hosts_content: |
       127.0.0.1 localhost
       127.0.1.1 {{ inventory_hostname }}
@@ -14,9 +13,6 @@
       ff02::2 ip6-allrouters
 
   tasks:
-    - name: Ping server
-      ansible.builtin.ping:
-
     - name: Basic usage
       ansible.builtin.debug:
         msg: " kubernetes version --{{ lookup('ansible.builtin.env', 'KUBERNETES_VERSION') }}--"

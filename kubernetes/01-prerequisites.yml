@@ -1,8 +1,7 @@
 ---
 - hosts: all
-  name: Disable swap on machines permanently
+  name: Disable runc app armour profile
   become: true
-
   tasks:
     - name: Create symbolic link to disable runc AppArmor profile
       file:
@@ -15,6 +14,11 @@
       command: apparmor_parser -R /etc/apparmor.d/runc
       ignore_errors: yes
 
+- hosts: all
+  name: Disable swap on machines permanently
+  become: true
+
+  tasks:
     - name: Remove swapfile from /etc/fstab
       mount:
         name: "{{ item }}"
@@ -148,3 +152,53 @@
         name: containerd
         state: started
         enabled: yes
+
+- hosts: all
+  name: Setup proper values for /etc/hosts
+  vars:
+    default_hosts_content: |
+      127.0.0.1 localhost
+      127.0.1.1 {{ inventory_hostname }}
+      
+      # The following lines are desirable for IPv6 capable hosts
+      ::1     ip6-localhost ip6-loopback
+      fe00::0 ip6-localnet
+      ff00::0 ip6-mcastprefix
+      ff02::1 ip6-allnodes
+      ff02::2 ip6-allrouters
+
+  tasks:
+    - name: Take a backup of the existing /etc/hosts file
+      become: true
+      ansible.builtin.copy:
+        src: /etc/hosts
+        dest: /etc/hosts.bak
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Build the hosts file content
+      set_fact:
+        hosts_file_content: |
+          {{ default_hosts_content }}
+          {% for host in groups['control_plane'] %}
+          {{ hostvars[host].ip_address }} {{ host }}
+          {% endfor %}
+          {% for host in groups['workers'] %}
+          {{ hostvars[host].ip_address }} {{ host }}
+          {% endfor %}
+          {% for host in groups['new_master'] %}
+          {{ hostvars[host].ip_address }} {{ host }}
+          {% endfor %}
+          {% for host in groups['jump_server'] %}
+          {{ hostvars[host].ip_address }} {{ host }}
+          {% endfor %}
+
+    - name: Write the new /etc/hosts file
+      become: true
+      ansible.builtin.copy:
+        content: "{{ hosts_file_content }}"
+        dest: /etc/hosts.test
+        owner: root
+        group: root
+        mode: '0644'
