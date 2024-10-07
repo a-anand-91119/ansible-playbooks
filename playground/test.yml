@@ -7,14 +7,6 @@
       set_fact:
         node_role: "{{ 'master' if inventory_hostname in groups['control_plane'] or inventory_hostname in groups['new_master'] else 'worker' }}"
 
-    - name: Gather number of CPU cores
-      set_fact:
-        num_cores: "{{ ansible_processor_vcpus }}"
-
-    - name: Gather total memory in MB
-      set_fact:
-        total_memory: "{{ ansible_memtotal_mb }}"
-
     - name: Debug the applied labels
       debug:
         msg: "Node {{ inventory_hostname }} labeled with: role={{ node_role }}, cpu={{ num_cores }}, ram={{ total_memory }}MB"
@@ -27,8 +19,6 @@
       command: >
         kubectl label node {{ inventory_hostname }}
         node-role.kubernetes.io/{{ node_role }}= 
-        cpu={{ num_cores }}
-        ram={{ total_memory }}MB
       delegate_to: "{{ groups['control_plane'][0] }}"
       when: ansible_processor_vcpus is defined and ansible_memtotal_mb is defined
 
