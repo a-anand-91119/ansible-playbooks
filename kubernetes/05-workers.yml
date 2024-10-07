@@ -43,3 +43,8 @@
 
     - debug:
         msg: "{{ joined_or_not.stdout }}"
+
+#    - name: Label the node as a worker using kubectl
+#      command: kubectl label node {{ inventory_hostname }} node-role.kubernetes.io/worker=
+#      delegate_to: "{{ groups['control_plane'][0] }}"
+#      when: joined_or_not is succeeded
