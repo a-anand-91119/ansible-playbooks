@@ -2,6 +2,16 @@
 - hosts: all
   vars:
     localhost_entry: "127.0.0.1 localhost"
+    default_hosts_content: |
+      127.0.0.1 localhost
+      127.0.1.1 {{ inventory_hostname }}
+
+      # The following lines are desirable for IPv6 capable hosts
+      ::1     ip6-localhost ip6-loopback
+      fe00::0 ip6-localnet
+      ff00::0 ip6-mcastprefix
+      ff02::1 ip6-allnodes
+      ff02::2 ip6-allrouters
 
   tasks:
     - name: Ping server
@@ -11,10 +21,18 @@
       ansible.builtin.debug:
         msg: " kubernetes version --{{ lookup('ansible.builtin.env', 'KUBERNETES_VERSION') }}--"
 
+    - name: Take a backup of the existing /etc/hosts file
+      ansible.builtin.copy:
+        src: /etc/hosts
+        dest: /etc/hosts.bak
+        owner: root
+        group: root
+        mode: '0644'
+
     - name: Build the hosts file content
       set_fact:
         hosts_file_content: |
-          {{ localhost_entry }}
+          {{ default_hosts_content }}
           {% for host in groups['control_plane'] %}
           {{ hostvars[host].ip_address }} {{ host }} {{ hostvars[host].ansible_host }}
           {% endfor %}
