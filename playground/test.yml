@@ -3,22 +3,7 @@
   vars:
 
   tasks:
-    - name: Get the node role (master or worker)
-      set_fact:
-        node_role: "{{ 'master' if inventory_hostname in groups['control_plane'] or inventory_hostname in groups['new_master'] else 'worker' }}"
-
-    - name: Debug the applied labels
-      debug:
-        msg: "Node {{ inventory_hostname }} labeled with: role={{ node_role }}, cpu={{ num_cores }}, ram={{ total_memory }}MB"
-
     - name: Basic usage
       ansible.builtin.debug:
         msg: " kubernetes version --{{ lookup('ansible.builtin.env', 'KUBERNETES_VERSION') }}--"
-
-    - name: Label nodes with role, disk type, CPU cores, and RAM
-      command: >
-        kubectl label node {{ inventory_hostname }}
-        node-role.kubernetes.io/{{ node_role }}= 
-      delegate_to: "{{ groups['control_plane'][0] }}"
-      when: ansible_processor_vcpus is defined and ansible_memtotal_mb is defined
 
