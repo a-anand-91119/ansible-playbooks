@@ -12,9 +12,9 @@
         - jq
         - curl
 
-    - name: Create kube-vip alias for containerd
+    - name: Pull kube-vip image using containerd
       ansible.builtin.shell: |
-        alias kube-vip="ctr image pull ghcr.io/kube-vip/kube-vip:{{ lookup('ansible.builtin.env', 'KUBE_VIP_VERSION') }}; ctr run --rm --net-host ghcr.io/kube-vip/kube-vip:{{ lookup('ansible.builtin.env', 'KUBE_VIP_VERSION') }} vip /kube-vip"
+        ctr image pull ghcr.io/kube-vip/kube-vip:{{ lookup('ansible.builtin.env', 'KUBE_VIP_VERSION') }}
 
     - name: Ensure /etc/kubernetes/manifests directory exists
       ansible.builtin.file:
@@ -31,7 +31,7 @@
 
     - name: Generate kube-vip static pod manifest for control plane with ARP
       ansible.builtin.shell: |
-        kube-vip manifest pod \
+        ctr run --rm --net-host ghcr.io/kube-vip/kube-vip:{{ lookup('ansible.builtin.env', 'KUBE_VIP_VERSION') }} vip /kube-vip manifest pod \
         --interface {{ kube_vip_interface }} \
         --address {{ kube_vip_ip }} \
         --controlplane \
