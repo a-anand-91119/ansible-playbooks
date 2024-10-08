@@ -43,8 +43,6 @@
         --controlplane \
         --arp \
         --leaderElection | tee /etc/kubernetes/manifests/kube-vip.yaml
-      args:
-        executable: /bin/bash
       register: manifest_output
 
     - name: Display kube-vip manifest creation output
