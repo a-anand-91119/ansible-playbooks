@@ -45,7 +45,6 @@
         msg: "{{ joined_or_not.stdout }}"
 
 - hosts: control_plane
-  become: true
   tasks:
     - name: Label the newly joined worker nodes as workers using kubectl
       command: kubectl label node {{ item }} node-role.kubernetes.io/worker=worker
