@@ -52,6 +52,14 @@
       loop:
         - { src: '/etc/kubernetes/manifests/kube-vip.yaml', dest: 'kube-vip.yaml' }
 
+    - name: Fetch super admin conf for kube-vip
+      fetch:
+        src: "{{ item.src }}"
+        dest: "/tmp/kubernetes/{{ item.dest }}"
+        flat: yes
+      loop:
+        - { src: '/etc/kubernetes/super-admin.conf', dest: 'super-admin.conf' }
+
 
 - hosts: new_master
   name: Reset kubeadm to cleanup node
@@ -74,6 +82,14 @@
         dest: "/home/{{ ansible_user }}/"
         mode: 0644
       with_items:
+        - super-admin.conf
+
+    - name: Copy super-admin conf to new master node
+      copy:
+        src: "/tmp/kubernetes/"
+        dest: "/home/{{ ansible_user }}/"
+        mode: 0644
+      with_items:
         - kube-vip.yaml
 
     - name: Ensure /etc/kubernetes/manifests directory exists
@@ -88,6 +104,8 @@
       block:
         - name: Move kube vip manifest to /etc/kubernetes/manifests
           command: mv /home/{{ ansible_user }}/kube-vip.yaml /etc/kubernetes/manifests/kube-vip.yaml
+        - name: Move super admin conf for kube vip manifest to /etc/kubernetes
+          command: mv /home/{{ ansible_user }}/super-admin.conf /etc/kubernetes/super-admin.conf
 
 - hosts: new_master
   name: Copy CA certs necessary to join cluster as a control plane
