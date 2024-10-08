@@ -21,7 +21,9 @@
           --set auth.rootPassword={{ lookup('ansible.builtin.env', 'MONGODB_ROOT_PASSWORD') }} \
           --set auth.username={{ lookup('ansible.builtin.env', 'MONGODB_USER_NAME') }} \
           --set auth.password={{ lookup('ansible.builtin.env', 'MONGODB_USER_PASSWORD') }} \
+          --set auth.database={{ lookup('ansible.builtin.env', 'MONGODB_AUTH_DATABASE') }} \
           --set metrics.enabled=true \
+          --create-namespace \
           --set serviceMonitor.enabled=true \
           --namespace mongodb \
           --set linkerd.injector.enabled=true
