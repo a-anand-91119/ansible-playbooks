@@ -36,6 +36,7 @@
         --address {{ kube_vip_ip }} \
         --controlplane \
         --arp \
+        --enableNodeLabeling \
         --leaderElection | tee /etc/kubernetes/manifests/kube-vip.yaml
       register: manifest_output
 
@@ -76,6 +77,7 @@
         --apiserver-cert-extra-sans={{ lookup('ansible.builtin.env', 'TAILSCALE_JUMP_SERVER_VPN_IP') }} \
         --pod-network-cidr={{ lookup('ansible.builtin.env', 'POD_NETWORK_CIDR') }} \
         --control-plane-endpoint={{ lookup('ansible.builtin.env', 'KUBE_VIP_IP') }} \
+        --control-plane-kubelet-local-mode \
         --v=5
       args:
         executable: /bin/bash
