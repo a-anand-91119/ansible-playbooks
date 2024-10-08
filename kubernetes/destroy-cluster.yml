@@ -17,8 +17,10 @@
       ignore_errors: true
 
     - name: Flush all iptables rules
-      command: iptables-save | grep -v KUBE | iptables-restore
+      ansible.builtin.shell: |
+        iptables-save | grep -v KUBE | iptables-restore
       ignore_errors: true
+      register: iptables_cleanup
       timeout: 10
 
     - name: Clean up any additional containerd artifacts
