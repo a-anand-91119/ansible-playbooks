@@ -44,8 +44,17 @@
         - { src: '/etc/kubernetes/pki/etcd/ca.crt', dest: 'etcd-ca.crt' }
         - { src: '/etc/kubernetes/pki/etcd/ca.key', dest: 'etcd-ca.key' }
 
+    - name: Fetch kube-vip manifest from control plane
+      fetch:
+        src: "{{ item.src }}"
+        dest: "/tmp/kubernetes/manifests/{{ item.dest }}"
+        flat: yes
+      loop:
+        - { src: '/etc/kubernetes/manifests/kube-vip.yaml', dest: 'kube-vip.yaml' }
+
 
 - hosts: new_master
+  name: Reset kubeadm to cleanup node
   become: true
   tasks:
 
@@ -53,11 +62,37 @@
       shell: kubeadm reset -f
       ignore_errors: true
 
-    - name: Copy the K8s join command to the new master node
+
+- hosts: new_master
+  name: Copy manifests to proper location before init
+  become: true
+  tasks:
+
+    - name: Copy manifests to new master node
       copy:
-        src: /tmp/kubernetes_master_join_command
-        dest: /tmp/kubernetes_master_join_command
-        mode: 0777
+        src: "/tmp/kubernetes/manifests/"
+        dest: "/home/{{ ansible_user }}/"
+        mode: 0644
+      with_items:
+        - kube-vip.yaml
+
+    - name: Ensure /etc/kubernetes/manifests directory exists
+      file:
+        path: /etc/kubernetes/manifests
+        state: directory
+        mode: '0755'
+        owner: root
+        group: root
+
+    - name: Move copied manifests to proper location in master node
+      block:
+        - name: Move kube vip manifest to /etc/kubernetes/manifests
+          command: mv /home/{{ ansible_user }}/kube-vip.yaml /etc/kubernetes/manifests/kube-vip.yaml
+
+- hosts: new_master
+  name: Copy CA certs necessary to join cluster as a control plane
+  become: true
+  tasks:
 
     - name: Copy CA certificates and keys to new master node
       copy:
@@ -74,7 +109,7 @@
         - etcd-ca.crt
         - etcd-ca.key
 
-    - name: Ensure /etc/kubernetes/pki directory exists
+    - name: Ensure /etc/kubernetes/pki/etcd directory exists
       file:
         path: /etc/kubernetes/pki/etcd
         state: directory
@@ -84,22 +119,33 @@
 
     - name: Move copied certificates to correct locations on new master node
       block:
-          - name: Move CA certificate to /etc/kubernetes/pki
-            command: mv /home/{{ ansible_user }}/ca.crt /etc/kubernetes/pki/
-          - name: Move CA key to /etc/kubernetes/pki
-            command: mv /home/{{ ansible_user }}/ca.key /etc/kubernetes/pki/
-          - name: Move SA key to /etc/kubernetes/pki
-            command: mv /home/{{ ansible_user }}/sa.key /etc/kubernetes/pki/
-          - name: Move SA public key to /etc/kubernetes/pki
-            command: mv /home/{{ ansible_user }}/sa.pub /etc/kubernetes/pki/
-          - name: Move Front Proxy CA certificate to /etc/kubernetes/pki
-            command: mv /home/{{ ansible_user }}/front-proxy-ca.crt /etc/kubernetes/pki/
-          - name: Move Front Proxy CA key to /etc/kubernetes/pki
-            command: mv /home/{{ ansible_user }}/front-proxy-ca.key /etc/kubernetes/pki/
-          - name: Move etcd CA certificate to /etc/kubernetes/pki/etcd
-            command: mv /home/{{ ansible_user }}/etcd-ca.crt /etc/kubernetes/pki/etcd/ca.crt
-          - name: Move etcd CA key to /etc/kubernetes/pki/etcd
-            command: mv /home/{{ ansible_user }}/etcd-ca.key /etc/kubernetes/pki/etcd/ca.key
+        - name: Move CA certificate to /etc/kubernetes/pki
+          command: mv /home/{{ ansible_user }}/ca.crt /etc/kubernetes/pki/
+        - name: Move CA key to /etc/kubernetes/pki
+          command: mv /home/{{ ansible_user }}/ca.key /etc/kubernetes/pki/
+        - name: Move SA key to /etc/kubernetes/pki
+          command: mv /home/{{ ansible_user }}/sa.key /etc/kubernetes/pki/
+        - name: Move SA public key to /etc/kubernetes/pki
+          command: mv /home/{{ ansible_user }}/sa.pub /etc/kubernetes/pki/
+        - name: Move Front Proxy CA certificate to /etc/kubernetes/pki
+          command: mv /home/{{ ansible_user }}/front-proxy-ca.crt /etc/kubernetes/pki/
+        - name: Move Front Proxy CA key to /etc/kubernetes/pki
+          command: mv /home/{{ ansible_user }}/front-proxy-ca.key /etc/kubernetes/pki/
+        - name: Move etcd CA certificate to /etc/kubernetes/pki/etcd
+          command: mv /home/{{ ansible_user }}/etcd-ca.crt /etc/kubernetes/pki/etcd/ca.crt
+        - name: Move etcd CA key to /etc/kubernetes/pki/etcd
+          command: mv /home/{{ ansible_user }}/etcd-ca.key /etc/kubernetes/pki/etcd/ca.key
+
+- hosts: new_master
+  name: Join new node to the cluster as a control-plane
+  become: true
+  tasks:
+
+    - name: Copy the K8s join command to the new master node
+      copy:
+        src: /tmp/kubernetes_master_join_command
+        dest: /tmp/kubernetes_master_join_command
+        mode: 0777
 
     - name: Join the new master node to the control plane
       command: sh /tmp/kubernetes_master_join_command
