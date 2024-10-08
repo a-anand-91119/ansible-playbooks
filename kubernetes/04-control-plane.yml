@@ -18,6 +18,11 @@
       ansible.builtin.set_fact:
         KV_VERSION: "{{ lookup('ansible.builtin.env', 'KUBE_VIP_VERSION') }}"
 
+    - name: Basic usage
+      ansible.builtin.debug:
+        msg: " kubernetes version --{{ lookup('ansible.builtin.env', 'KUBERNETES_VERSION') }}--  {{ ansible_facts.packages }}"
+
+
     - name: Create kube-vip alias for containerd
       ansible.builtin.shell: |
         alias kube-vip="ctr image pull ghcr.io/kube-vip/kube-vip:{{ KV_VERSION }}; ctr run --rm --net-host ghcr.io/kube-vip/kube-vip:{{ KV_VERSION }} vip /kube-vip"
