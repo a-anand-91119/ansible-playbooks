@@ -2,7 +2,6 @@
   name: "Install MongoDB"
 
   tasks:
-
     - name: Add the Longhorn Helm repository
       shell: "helm repo add bitnami https://charts.bitnami.com/bitnami"
       args:
