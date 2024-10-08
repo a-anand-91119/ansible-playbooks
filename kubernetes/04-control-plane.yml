@@ -2,8 +2,6 @@
 - hosts: control_plane
   become: true
   name: Setup kube-vip floating ip
-  vars:
-    KV_VERSION: ""  # Will be fetched dynamically
 
   tasks:
     - name: Ensure jq and curl are installed
@@ -18,10 +16,6 @@
       ansible.builtin.shell: |
         alias kube-vip="ctr image pull ghcr.io/kube-vip/kube-vip:{{ lookup('ansible.builtin.env', 'KUBE_VIP_VERSION') }}; ctr run --rm --net-host ghcr.io/kube-vip/kube-vip:{{ lookup('ansible.builtin.env', 'KUBE_VIP_VERSION') }} vip /kube-vip"
 
-    - name: debug
-      ansible.builtin.debug:
-        msg: "ctr image pull ghcr.io/kube-vip/kube-vip:{{ lookup('ansible.builtin.env', 'KUBE_VIP_VERSION') }}; ctr run --rm --net-host ghcr.io/kube-vip/kube-vip:{{ lookup('ansible.builtin.env', 'KUBE_VIP_VERSION') }} vip /kube-vip"
-
     - name: Ensure /etc/kubernetes/manifests directory exists
       ansible.builtin.file:
         path: /etc/kubernetes/manifests
@@ -30,11 +24,22 @@
         group: root
         mode: '0755'
 
+    - name: Debug KUBE_VIP_INTERFACE and KUBE_VIP_IP
+      ansible.builtin.debug:
+        msg:
+          - "KUBE_VIP_INTERFACE: {{ lookup('ansible.builtin.env', 'KUBE_VIP_INTERFACE') }}"
+          - "KUBE_VIP_IP: {{ lookup('ansible.builtin.env', 'KUBE_VIP_IP') }}"
+
+    - name: Set kube-vip environment variables
+      ansible.builtin.set_fact:
+        kube_vip_interface: "{{ lookup('ansible.builtin.env', 'KUBE_VIP_INTERFACE') }}"
+        kube_vip_ip: "{{ lookup('ansible.builtin.env', 'KUBE_VIP_IP') }}"
+
     - name: Generate kube-vip static pod manifest for control plane with ARP
       ansible.builtin.shell: |
         kube-vip manifest pod \
-        --interface {{ lookup('ansible.builtin.env', 'KUBE_VIP_INTERFACE') }} \
-        --address {{ lookup('ansible.builtin.env', 'KUBE_VIP_IP') }} \
+        --interface {{ kube_vip_interface }} \
+        --address {{ kube_vip_ip }} \
         --controlplane \
         --arp \
         --leaderElection | tee /etc/kubernetes/manifests/kube-vip.yaml
