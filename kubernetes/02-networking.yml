@@ -102,7 +102,9 @@
               enp1s0:
                 addresses:
                   - {{ hostvars[inventory_hostname]['ansible_host'] }}/24
-                gateway4: {{ hostvars[inventory_hostname]['gateway'] }}
+                routes:
+                  - to: default
+                    via: {{ hostvars[inventory_hostname]['gateway'] }}
                 nameservers:
                   addresses: {{ hostvars[inventory_hostname]['nameservers'] }}
         owner: root
