@@ -14,13 +14,13 @@
         - jq
         - curl
 
-    - name: Set kube-vip version
-      ansible.builtin.set_fact:
-        KV_VERSION: "{{ lookup('ansible.builtin.env', 'KUBE_VIP_VERSION') }}"
-
     - name: Create kube-vip alias for containerd
       ansible.builtin.shell: |
-        alias kube-vip="ctr image pull ghcr.io/kube-vip/kube-vip:{{ KV_VERSION }}; ctr run --rm --net-host ghcr.io/kube-vip/kube-vip:{{ KV_VERSION }} vip /kube-vip"
+        alias kube-vip="ctr image pull ghcr.io/kube-vip/kube-vip:{{ lookup('ansible.builtin.env', 'KUBE_VIP_VERSION') }}; ctr run --rm --net-host ghcr.io/kube-vip/kube-vip:{{ lookup('ansible.builtin.env', 'KUBE_VIP_VERSION') }} vip /kube-vip"
+
+    - name: debug
+      ansible.builtin.debug:
+        msg: "ctr image pull ghcr.io/kube-vip/kube-vip:{{ lookup('ansible.builtin.env', 'KUBE_VIP_VERSION') }}; ctr run --rm --net-host ghcr.io/kube-vip/kube-vip:{{ lookup('ansible.builtin.env', 'KUBE_VIP_VERSION') }} vip /kube-vip"
 
     - name: Ensure /etc/kubernetes/manifests directory exists
       ansible.builtin.file:
