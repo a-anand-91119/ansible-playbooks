@@ -1,6 +1,63 @@
 ---
 - hosts: control_plane
   become: true
+  name: Setup kube-vip floating ip
+  vars:
+    KV_VERSION: ""  # Will be fetched dynamically
+
+  tasks:
+    - name: Ensure jq and curl are installed
+      ansible.builtin.package:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - jq
+        - curl
+
+    - name: Set kube-vip version
+      ansible.builtin.set_fact:
+        KV_VERSION: "{{ lookup('ansible.builtin.env', 'KUBE_VIP_VERSION') }}"
+
+    - name: Create kube-vip alias for containerd
+      ansible.builtin.shell: |
+        alias kube-vip="ctr image pull ghcr.io/kube-vip/kube-vip:{{ KV_VERSION }}; ctr run --rm --net-host ghcr.io/kube-vip/kube-vip:{{ KV_VERSION }} vip /kube-vip"
+      when: "'containerd' in ansible_facts.packages"
+
+    - name: Ensure /etc/kubernetes/manifests directory exists
+      ansible.builtin.file:
+        path: /etc/kubernetes/manifests
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Generate kube-vip static pod manifest for control plane with ARP
+      ansible.builtin.shell: |
+        kube-vip manifest pod \
+        --interface {{ lookup('ansible.builtin.env', 'KUBE_VIP_INTERFACE') }} \
+        --address {{ lookup('ansible.builtin.env', 'KUBE_VIP_IP') }} \
+        --controlplane \
+        --arp \
+        --leaderElection | tee /etc/kubernetes/manifests/kube-vip.yaml
+      args:
+        executable: /bin/bash
+      register: manifest_output
+
+    - name: Display kube-vip manifest creation output
+      debug:
+        var: manifest_output.stdout
+
+    - name: Copy kube-vip manifest to all control plane nodes
+      copy:
+        src: /etc/kubernetes/manifests/kube-vip.yaml
+        dest: /etc/kubernetes/manifests/kube-vip.yaml
+        mode: '0644'
+        owner: root
+        group: root
+      when: inventory_hostname != groups['control_plane'][0]
+
+- hosts: control_plane
+  become: true
 
   tasks:
     - name: Pulling images required for setting up a Kubernetes cluster
@@ -22,7 +79,7 @@
         --apiserver-advertise-address={{ hostvars[inventory_hostname]['ansible_host'] }} \
         --apiserver-cert-extra-sans={{ lookup('ansible.builtin.env', 'TAILSCALE_JUMP_SERVER_VPN_IP') }} \
         --pod-network-cidr={{ lookup('ansible.builtin.env', 'POD_NETWORK_CIDR') }} \
-        --control-plane-endpoint={{ hostvars[inventory_hostname]['ansible_host'] }}:6443 \
+        --control-plane-endpoint={{ lookup('ansible.builtin.env', 'KUBE_VIP_IP') }} \
         --v=5
       args:
         executable: /bin/bash
