@@ -1,0 +1,40 @@
+- hosts: jump_server
+  name: "Install MongoDB"
+
+  tasks:
+    - name: Add the Longhorn Helm repository
+      shell: "helm repo add bitnami https://charts.bitnami.com/bitnami"
+      args:
+        creates: ~/.cache/helm/repository/bitnami-index.yaml
+
+    - name: Update Helm repositories
+      shell: "helm repo update"
+      register: helm_repo_update_output
+
+    - name: Install MongoDB in the mongodb namespace
+      shell: |
+        helm install mongodb bitnami/mongodb \
+          --set replicaSet.enabled=true \
+          --set architecture=replicaset \
+          --set persistence.size=10Gi \
+          --set persistence.storageClass=longhorn-static \
+          --set auth.rootPassword={{ lookup('ansible.builtin.env', 'MONGODB_ROOT_PASSWORD') }} \
+          --set auth.username={{ lookup('ansible.builtin.env', 'MONGODB_USER_NAME') }} \
+          --set auth.password={{ lookup('ansible.builtin.env', 'MONGODB_USER_PASSWORD') }} \
+          --set auth.database={{ lookup('ansible.builtin.env', 'MONGODB_AUTH_DATABASE') }} \
+          --set metrics.enabled=true \
+          --create-namespace \
+          --set serviceMonitor.enabled=true \
+          --namespace mongodb \
+          --set linkerd.injector.enabled=true
+      register: helm_install_output
+      changed_when: "'release: installed' in helm_install_output.stdout"
+      ignore_errors: true # TODO: THis needs to be removed
+
+    - name: Verify MongoDB installation by checking pods
+      shell: "kubectl -n mongodb get pod"
+      register: mongodb_pods_output
+
+    - name: Display running MongoDB pods
+      debug:
+        var: mongodb_pods_output.stdout

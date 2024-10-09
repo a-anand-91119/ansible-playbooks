@@ -102,12 +102,14 @@
               enp1s0:
                 addresses:
                   - {{ hostvars[inventory_hostname]['ansible_host'] }}/24
-                gateway4: {{ hostvars[inventory_hostname]['gateway'] }}
+                routes:
+                  - to: default
+                    via: {{ hostvars[inventory_hostname]['gateway'] }}
                 nameservers:
                   addresses: {{ hostvars[inventory_hostname]['nameservers'] }}
         owner: root
         group: root
-        mode: '0644'
+        mode: '0600'
 
     - name: Apply netplan configuration
       ansible.builtin.command: netplan apply

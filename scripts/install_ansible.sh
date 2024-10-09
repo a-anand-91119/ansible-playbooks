@@ -13,3 +13,6 @@ wget "https://github.com/ansible-semaphore/semaphore/releases/download/v${VER}/s
 sudo apt install ./semaphore_${VER}_linux_amd64.deb
 
 sudo rm ./semaphore_${VER}_linux_amd64.deb
+
+sudo mkdir /etc/semaphore
+echo "Run semaphore setup from /etc/semaphore before running start_semaphore.sh"

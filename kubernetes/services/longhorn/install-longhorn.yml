@@ -1,5 +1,5 @@
 - hosts: jump_server
-  name: "Install Helm"
+  name: "Install Longhorn"
 
   tasks:
 

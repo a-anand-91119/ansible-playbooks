@@ -8,8 +8,17 @@
       ignore_errors: true
 
     - name: Remove Kubernetes configuration directory
+      become: true
+      become_user: admin
       file:
         path: ~/.kube
+        state: absent
+
+    - name: Remove LInkerd configuration directory
+      become: true
+      become_user: admin
+      file:
+        path: ~/.linkerd2
         state: absent
 
     - name: Remove network interface configurations (CNI)
@@ -17,8 +26,10 @@
       ignore_errors: true
 
     - name: Flush all iptables rules
-      command: iptables-save | grep -v KUBE | iptables-restore
+      ansible.builtin.shell: |
+        iptables-save | grep -v KUBE | iptables-restore
       ignore_errors: true
+      register: iptables_cleanup
       timeout: 10
 
     - name: Clean up any additional containerd artifacts

@@ -1,6 +1,66 @@
 ---
 - hosts: control_plane
   become: true
+  name: Setup kube-vip floating ip
+
+  tasks:
+    - name: Ensure jq and curl are installed
+      ansible.builtin.package:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - jq
+        - curl
+
+    - name: Pull kube-vip image using containerd
+      ansible.builtin.shell: |
+        ctr image pull ghcr.io/kube-vip/kube-vip:{{ lookup('ansible.builtin.env', 'KUBE_VIP_VERSION') }}
+
+    - name: Ensure /etc/kubernetes/manifests directory exists
+      ansible.builtin.file:
+        path: /etc/kubernetes/manifests
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Set kube-vip environment variables
+      ansible.builtin.set_fact:
+        kube_vip_interface: "{{ lookup('ansible.builtin.env', 'KUBE_VIP_INTERFACE') }}"
+        kube_vip_ip: "{{ lookup('ansible.builtin.env', 'KUBE_VIP_IP') }}"
+
+    - name: Generate kube-vip static pod manifest for control plane with ARP
+      ansible.builtin.shell: |
+        ctr run --rm --net-host ghcr.io/kube-vip/kube-vip:{{ lookup('ansible.builtin.env', 'KUBE_VIP_VERSION') }} vip /kube-vip manifest pod \
+        --interface {{ kube_vip_interface }} \
+        --address {{ kube_vip_ip }} \
+        --controlplane \
+        --arp \
+        --enableNodeLabeling \
+        --leaderElection | tee /etc/kubernetes/manifests/kube-vip.yaml
+      register: manifest_output
+
+    - name: Replace admin.conf with super-admin.conf in kube-vip manifest
+      ansible.builtin.replace:
+        path: /etc/kubernetes/manifests/kube-vip.yaml
+        regexp: 'path: /etc/kubernetes/admin.conf'
+        replace: 'path: /etc/kubernetes/super-admin.conf'
+
+    - name: Display kube-vip manifest creation output
+      debug:
+        var: manifest_output.stdout
+
+    - name: Copy kube-vip manifest to all control plane nodes
+      copy:
+        src: /etc/kubernetes/manifests/kube-vip.yaml
+        dest: /etc/kubernetes/manifests/kube-vip.yaml
+        mode: '0644'
+        owner: root
+        group: root
+      when: inventory_hostname != groups['control_plane'][0]
+
+- hosts: control_plane
+  become: true
 
   tasks:
     - name: Pulling images required for setting up a Kubernetes cluster
@@ -22,7 +82,7 @@
         --apiserver-advertise-address={{ hostvars[inventory_hostname]['ansible_host'] }} \
         --apiserver-cert-extra-sans={{ lookup('ansible.builtin.env', 'TAILSCALE_JUMP_SERVER_VPN_IP') }} \
         --pod-network-cidr={{ lookup('ansible.builtin.env', 'POD_NETWORK_CIDR') }} \
-        --control-plane-endpoint={{ hostvars[inventory_hostname]['ansible_host'] }}:6443 \
+        --control-plane-endpoint={{ lookup('ansible.builtin.env', 'KUBE_VIP_IP') }} \
         --v=5
       args:
         executable: /bin/bash
@@ -83,3 +143,14 @@
     - name: Ensure Calico Custom Resources applied successfully
       debug:
         msg: "{{ calico_custom_resources_output.stdout }}"
+#
+#- hosts: control_plane
+#  name: Update kube-vip to use admin instead of super admin
+#  become: true
+#  tasks:
+#
+#    - name: Replace super-admin.conf with admin.conf in kube-vip manifest
+#      ansible.builtin.replace:
+#        path: /etc/kubernetes/manifests/kube-vip.yaml
+#        regexp: 'path: /etc/kubernetes/super-admin.conf'
+#        replace: 'path: /etc/kubernetes/admin.conf'
