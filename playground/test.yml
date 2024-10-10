@@ -1,6 +1,6 @@
 ---
 - name: Install UrBackup Client
-  hosts: all
+  hosts: jump_server
   become: yes
   tasks:
     - name: Download UrBackup client installer
