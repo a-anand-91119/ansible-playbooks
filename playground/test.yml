@@ -14,7 +14,45 @@
       args:
         removes: "/tmp/urbackup_client.sh"
 
+    - name: Enable Internet mode for UrBackup client
+      command: urbackupclientctl set-settings --server-url "" --name "jump-server" --authkey "35UnMoxTnJ"
+
+    - name: Ensure INTERNET_ONLY is true in /etc/default/urbackupclient
+      lineinfile:
+        path: /etc/default/urbackupclient
+        regexp: 'INTERNET_ONLY=false'
+        line: 'INTERNET_ONLY=true'
+        state: present
+      when: ansible_facts['os_family'] == 'Debian'
+
     - name: Remove installer script
       file:
         path: "/tmp/urbackup_client.sh"
         state: absent
+
+- name: Install dattobd for snapshots and incremental backups
+  hosts: jump_server
+  become: yes
+  tasks:
+    - name: Add Datto GPG key
+      apt_key:
+        url: "https://cpkg.datto.com/DATTO-PKGS-GPG-KEY"
+        state: present
+
+    - name: Add Datto repository to sources list
+      apt_repository:
+        repo: "deb [arch=amd64] https://cpkg.datto.com/datto-deb/public/{{ ansible_distribution_release }} {{ ansible_distribution_release }} main"
+        filename: "datto-linux-agent"
+        state: present
+
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install dattobd packages
+      apt:
+        name:
+          - dattobd-dkms
+          - dattobd-utils
+        state: present
