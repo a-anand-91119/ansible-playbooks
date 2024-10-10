@@ -15,7 +15,7 @@
         removes: "/tmp/urbackup_client.sh"
 
     - name: Enable Internet mode for UrBackup client
-      command: urbackupclientctl set-settings --authkey "35UnMoxTnJ" urbackupclientctl set-settings --authkey "35UnMoxTnJ" --name "jump-server" --server-url "urbackup://192.168.0.124:55414"
+      command: urbackupclientctl set-settings --authkey "35UnMoxTnJ" --name "jump-server" --server-url "urbackup://192.168.0.124:55414"
 
     - name: Ensure INTERNET_ONLY is true in /etc/default/urbackupclient
       lineinfile:
