@@ -1,9 +1,20 @@
 ---
-- hosts: control_plane, workers, new_master
-  vars:
-
+- name: Install UrBackup Client
+  hosts: all
+  become: yes
   tasks:
-    - name: Basic usage
-      ansible.builtin.debug:
-        msg: " kubernetes version --{{ lookup('ansible.builtin.env', 'KUBERNETES_VERSION') }}--"
+    - name: Download UrBackup client installer
+      get_url:
+        url: "https://hndl.urbackup.org/Client/2.5.25/UrBackup%20Client%20Linux%202.5.25.sh"
+        dest: "/tmp/urbackup_client.sh"
+        mode: '0755'
 
+    - name: Run UrBackup installer script
+      command: "sh /tmp/urbackup_client.sh"
+      args:
+        removes: "/tmp/urbackup_client.sh"
+
+    - name: Remove installer script
+      file:
+        path: "/tmp/urbackup_client.sh"
+        state: absent
