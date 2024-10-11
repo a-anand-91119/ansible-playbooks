@@ -41,7 +41,8 @@
 
     - name: Add Datto repository to sources list
       apt_repository:
-        repo: "deb [arch=amd64] https://cpkg.datto.com/datto-deb/public/{{ ansible_distribution_release }} {{ ansible_distribution_release }} main"
+        # TODO: update the below line when proper releases are available
+        repo: "deb [trusted=yes arch=amd64] https://cpkg.datto.com/datto-deb/public/jammy jammy main"
         filename: "datto-linux-agent"
         state: present
 
