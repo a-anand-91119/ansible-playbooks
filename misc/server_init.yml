@@ -27,7 +27,7 @@
       ansible.posix.authorized_key:
         user: "{{ created_username }}"
         state: present
-        key: "{{ lookup('file', '/home/pi/.ssh/id_rsa.pub') }}"
+        key: "{{ lookup('file', '/home/admin/.ssh/id_rsa.pub') }}"
 
     - name: Disable password authentication for root
       lineinfile:
