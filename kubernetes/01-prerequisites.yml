@@ -198,7 +198,7 @@
       become: true
       ansible.builtin.copy:
         content: "{{ hosts_file_content }}"
-        dest: /etc/hosts.test
+        dest: /etc/hosts
         owner: root
         group: root
         mode: '0644'
