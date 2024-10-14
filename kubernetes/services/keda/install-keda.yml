@@ -2,7 +2,7 @@
   name: "Install KEDAs Auto Scaler"
 
   tasks:
-    - name: Add the Kafka Helm repository
+    - name: Add the KEDAs Helm repository
       shell: "helm repo add kedacore https://kedacore.github.io/charts"
       args:
         creates: ~/.cache/helm/repository/kedacore-index.yaml
@@ -11,7 +11,7 @@
       shell: "helm repo update"
       register: helm_repo_update_output
 
-    - name: Install Kafka in the kafka namespace
+    - name: Install KEDAs in the keda namespace
       shell: |
         helm install keda kedacore/keda \
           --namespace keda \
