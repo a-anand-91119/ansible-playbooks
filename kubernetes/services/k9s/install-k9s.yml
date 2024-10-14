@@ -1,0 +1,18 @@
+---
+- name: Install K9s on Linux
+  hosts: jump_server
+  become: yes
+  tasks:
+    - name: Download K9s deb package
+      ansible.builtin.get_url:
+        url: https://github.com/derailed/k9s/releases/download/{{ lookup('ansible.builtin.env', 'K9S_VERSION') }}/k9s_linux_amd64.deb
+        dest: /tmp/k9s_linux_amd64.deb
+
+    - name: Install K9s deb package
+      ansible.builtin.apt:
+        deb: /tmp/k9s_linux_amd64.deb
+
+    - name: Remove K9s deb package
+      ansible.builtin.file:
+        path: /tmp/k9s_linux_amd64.deb
+        state: absent
