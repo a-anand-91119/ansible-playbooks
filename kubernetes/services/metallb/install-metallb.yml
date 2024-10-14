@@ -48,7 +48,7 @@
         kubectl wait --namespace metallb-system \
           --for=condition=ready pod \
           --selector=app=metallb \
-          --timeout=120s
+          --timeout=300s
       register: res
       changed_when: "false"
 
