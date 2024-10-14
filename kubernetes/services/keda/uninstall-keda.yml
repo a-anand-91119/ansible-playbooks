@@ -19,11 +19,8 @@
         msg: "Failed to uninstall KEDA Helm release."
       when: keda_uninstall.rc != 0
 
-    - name: Delete KEDA namespace
-      kubernetes.core.k8s:
-        state: absent
-        kind: Namespace
-        name: keda
+    - name: Delete KEDA namespace using kubectl
+      shell: kubectl delete namespace keda
       ignore_errors: yes
       register: keda_namespace_deleted
 
