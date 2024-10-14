@@ -9,11 +9,6 @@
       ignore_errors: yes
       register: keda_objects_deleted
 
-    - name: Check if any KEDA ScaledObjects or ScaledJobs exist
-      fail:
-        msg: "Failed to delete all ScaledObjects and ScaledJobs."
-      when: keda_objects_deleted.rc != 0
-
     - name: Uninstall KEDA Helm chart
       shell: helm uninstall keda -n keda
       ignore_errors: yes
