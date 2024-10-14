@@ -4,7 +4,7 @@
     - name: Disable Strict ARP for the cluster
       ansible.builtin.shell: "kubectl get configmap kube-proxy -n kube-system -o yaml | sed -e 's/strictARP: false/strictARP: true/' | kubectl apply -f - -n kube-system"
       register: res
-      changed_when: res.rc != 0
+      changed_when: "res.rc != 0"
 
     - name: Ensure /tmp/metallb directory exists
       file:
@@ -41,14 +41,23 @@
       ansible.builtin.shell: |
         kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/{{ lookup('ansible.builtin.env', 'METALLB_VERSION') }}/config/manifests/metallb-native.yaml
       register: res
-      changed_when: res.rc != 0
+      changed_when: "res.rc != 0"
+
+    - name: Wait for MetalLB pods to be ready
+      ansible.builtin.shell: |
+        kubectl wait --namespace metallb-system \
+          --for=condition=ready pod \
+          --selector=app=metallb \
+          --timeout=120s
+      register: res
+      changed_when: "false"
 
     - name: Apply the metallb ip address pool configuration
       ansible.builtin.shell: kubectl apply -f /tmp/metallb/metallb-addr-pool.yml
       register: res
-      changed_when: res.rc != 0
+      changed_when: "res.rc != 0"
 
     - name: Apply the metallb advertise configuration
       ansible.builtin.shell: kubectl apply -f /tmp/metallb/metallb-advertise.yml
       register: res
-      changed_when: res.rc != 0
+      changed_when: "res.rc != 0"
