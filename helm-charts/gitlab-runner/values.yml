@@ -1,3 +1,0 @@
-gitlabUrl: https://gitlab.notyouraverage.dev
-rbac: { create: true }
-runnerToken: <Instance_Runner_Token>
