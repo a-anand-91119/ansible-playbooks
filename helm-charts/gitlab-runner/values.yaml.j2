@@ -1,0 +1,4 @@
+gitlabUrl: "{{ lookup('ansible.builtin.env', 'GITLAB_INSTANCE_URL') }}"
+rbac:
+  create: true
+runnerToken: "{{ lookup('ansible.builtin.env', 'GITLAB_RUNNER_TOKEN') }}"
