@@ -24,7 +24,7 @@
         helm install \
           gitlab-runner -f /tmp/values.yaml \
           gitlab/gitlab-runner \
-          --namespace kafka \
+          --namespace gitlab-runner \
           --create-namespace
 
     - name: Verify runner installation
