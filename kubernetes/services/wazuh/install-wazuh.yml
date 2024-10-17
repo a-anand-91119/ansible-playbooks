@@ -1,0 +1,54 @@
+---
+- name: Install Wazuh on Kubernetes (local-env)
+  hosts: jump_server
+  become: yes
+  tasks:
+
+    - name: Clone the Wazuh Kubernetes repository
+      git:
+        repo: https://github.com/wazuh/wazuh-kubernetes.git
+        dest: /tmp/wazuh-kubernetes
+        version: { { lookup('ansible.builtin.env', 'WAZUH_VERSION') } }
+        depth: 1
+
+    - name: Change directory to wazuh-kubernetes
+      command: chdir=/tmp/wazuh-kubernetes creates=/tmp/wazuh-kubernetes/envs/local-env/kustomization.yaml
+
+    - name: Generate self-signed certificates for Wazuh indexer cluster
+      command: /bin/bash /tmp/wazuh-kubernetes/wazuh/certs/indexer_cluster/generate_certs.sh
+      args:
+        chdir: /tmp/wazuh-kubernetes
+
+    - name: Generate self-signed certificates for Wazuh dashboard cluster
+      command: /bin/bash /tmp/wazuh-kubernetes/wazuh/certs/dashboard_http/generate_certs.sh
+      args:
+        chdir: /tmp/wazuh-kubernetes
+
+    - name: Modify the storage class provisioner
+      replace:
+        path: /tmp/wazuh-kubernetes/envs/local-env/storage-class.yaml
+        regexp: 'provisioner: .*'
+        replace: 'provisioner: driver.longhorn.io'
+
+
+    - name: Apply the Wazuh manifests for local-env
+      command: kubectl apply -k envs/local-env/
+      args:
+        chdir: /tmp/wazuh-kubernetes
+
+    - name: Wait for Wazuh pods to be running
+      shell: |
+        kubectl get pods -n wazuh | grep -v 'Running\|Completed'
+      register: pod_status
+      until: pod_status.stdout == ""
+      retries: 10
+      delay: 30
+
+    - name: Verify Wazuh deployment
+      shell: kubectl get pods -n wazuh
+      register: wazuh_pods
+      changed_when: false
+
+    - name: Output Wazuh pods status
+      debug:
+        var: wazuh_pods.stdout
