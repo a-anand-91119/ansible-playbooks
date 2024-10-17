@@ -10,7 +10,6 @@
 
     - name: Update Helm repositories
       shell: "helm repo update"
-      register: helm_repo_update_output
 
     - name: Install Longhorn in the longhorn-system namespace
       shell: |
