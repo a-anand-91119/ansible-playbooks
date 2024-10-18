@@ -12,7 +12,7 @@
 
     - name: Install/Upgrade CSI NFS Driver
       shell: |
-        helm install csi-driver-nfs2 csi-driver-nfs/csi-driver-nfs \
+        helm upgrade --install csi-driver-nfs2 csi-driver-nfs/csi-driver-nfs \
           --namespace kube-system \
           --set externalSnapshotter.enabled=true \
           --set externalSnapshotter.name=csi-nfs-snapshot-controller \
