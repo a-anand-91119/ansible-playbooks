@@ -4,7 +4,7 @@
   tasks:
     - name: Uninstall the CSI NFS driver using Helm
       ansible.builtin.command:
-        cmd: helm uninstall nfs-csi-driver --namespace kube-system
+        cmd: helm uninstall nfs-csi-driver2 --namespace kube-system
       register: helm_uninstall
       ignore_errors: true
 
