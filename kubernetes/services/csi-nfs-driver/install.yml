@@ -20,3 +20,25 @@
           --set controller.replicas=2 \
           --set storageClass.create=true \
           --version {{ lookup('ansible.builtin.env', 'CSI_NFS_DRIVER_VERSION') }}
+
+    - name: Verify Helm release status
+      ansible.builtin.command:
+        cmd: helm status csi-driver-nfs --namespace kube-system
+      register: helm_status
+      failed_when: "'STATUS: deployed' not in helm_status.stdout"
+      retries: 5
+      delay: 10
+      until: helm_status is succeeded
+
+    - name: Verify CSI NFS driver pods are running
+      ansible.builtin.command:
+        cmd: kubectl get pods -n kube-system -l app.kubernetes.io/name=csi-driver-nfs -o jsonpath='{.items[*].status.phase}'
+      register: pod_status
+      failed_when: "'Running' not in pod_status.stdout"
+      retries: 5
+      delay: 15
+      until: pod_status.stdout.find('Running') != -1
+
+    - name: Display successful installation message
+      ansible.builtin.debug:
+        msg: "CSI NFS driver installed and running successfully."
