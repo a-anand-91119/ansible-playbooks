@@ -1,0 +1,22 @@
+---
+- name: Install CSI NFS driver in Kubernetes
+  hosts: jump_server
+  tasks:
+    - name: Add CSI NFS Helm repository
+      shell: helm repo add csi-driver-nfs https://raw.githubusercontent.com/kubernetes-csi/csi-driver-nfs/master/charts
+      args:
+        creates: ~/.cache/helm/repository/csi-driver-nfs-index.yaml
+
+    - name: Update Helm repository
+      shell: "helm repo update"
+
+    - name: Install/Upgrade CSI NFS Driver
+      shell: |
+        helm install csi-driver-nfs2 csi-driver-nfs/csi-driver-nfs \
+          --namespace kube-system \
+          --set externalSnapshotter.enabled=true \
+          --set externalSnapshotter.name=csi-nfs-snapshot-controller \
+          --set controller.runOnControlPlane=true \
+          --set controller.replicas=2 \
+          --set storageClass.create=true \
+          --version {{ lookup('ansible.builtin.env', 'CSI_NFS_DRIVER_VERSION') }}
