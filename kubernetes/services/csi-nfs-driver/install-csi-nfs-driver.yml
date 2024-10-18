@@ -22,7 +22,7 @@
 
     - name: Verify Helm release status
       ansible.builtin.command:
-        cmd: helm status csi-driver-nfs --namespace kube-system
+        cmd: helm status csi-driver-nfs2 --namespace kube-system
       register: helm_status
       failed_when: "'STATUS: deployed' not in helm_status.stdout"
       retries: 30
