@@ -35,9 +35,3 @@
     - name: Delete NFS storage classes using kubectl manifest
       ansible.builtin.command:
         cmd: kubectl delete -f /tmp/k8s-manifests/nfs-storage-class.yml
-      register: delete_storage-class
-      ignore_errors: true
-
-    - name: Display storage class deletion result
-      ansible.builtin.debug:
-        msg: "{{ delete_storage-class.stdout if delete_storage-class.stdout else delete_storage-class.stderr }}"
