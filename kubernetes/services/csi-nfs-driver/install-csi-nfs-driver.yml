@@ -25,8 +25,8 @@
         cmd: helm status csi-driver-nfs --namespace kube-system
       register: helm_status
       failed_when: "'STATUS: deployed' not in helm_status.stdout"
-      retries: 10
-      delay: 30
+      retries: 30
+      delay: 10
       until: helm_status is succeeded
 
     - name: Verify CSI NFS driver pods are running
