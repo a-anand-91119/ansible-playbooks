@@ -1,0 +1,43 @@
+---
+- name: Remove CSI NFS driver and storage classes in Kubernetes
+  hosts: jump_server
+  tasks:
+    - name: Uninstall the CSI NFS driver using Helm
+      ansible.builtin.command:
+        cmd: helm uninstall nfs-csi-driver --namespace kube-system
+      register: helm_uninstall
+      ignore_errors: true
+
+    - name: Display Helm uninstall result
+      ansible.builtin.debug:
+        msg: "{{ helm_uninstall.stdout if helm_uninstall.stdout else helm_uninstall.stderr }}"
+
+    - name: Create a directory for YAML files
+      ansible.builtin.file:
+        path: /tmp/k8s-manifests
+        state: directory
+
+    - name: Template NFS storage class YAML
+      ansible.builtin.template:
+        src: nfs-storage-class.yml.j2
+        dest: /tmp/k8s-manifests/nfs-storage-class.yml
+        mode: '0644'
+      vars:
+        nfs_server: "{{ lookup('ansible.builtin.env', 'NFS_SERVER_IP') }}"
+        nfs_ephemeral_share: "{{ lookup('ansible.builtin.env', 'NFS_EPHEMERAL_SHARE_PATH') }}"
+        nfs_retained_share: "{{ lookup('ansible.builtin.env', 'NFS_RETAINED_SHARE_PATH') }}"
+
+    - name: Verify that the file was copied
+      ansible.builtin.stat:
+        path: /tmp/k8s-manifests/nfs-storage-class.yml
+      register: storage_class_file
+
+    - name: Delete NFS storage classes using kubectl manifest
+      ansible.builtin.command:
+        cmd: kubectl delete -f /tmp/k8s-manifests/nfs-storage-class.yml
+      register: delete_storage-class
+      ignore_errors: true
+
+    - name: Display storage class deletion result
+      ansible.builtin.debug:
+        msg: "{{ delete_storage-class.stdout if delete_storage-class.stdout else delete_storage-class.stderr }}"

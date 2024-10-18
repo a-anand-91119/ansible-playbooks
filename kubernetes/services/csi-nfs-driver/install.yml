@@ -18,7 +18,6 @@
           --set externalSnapshotter.name=csi-nfs-snapshot-controller \
           --set controller.runOnControlPlane=true \
           --set controller.replicas=2 \
-          --set storageClass.create=true \
           --version {{ lookup('ansible.builtin.env', 'CSI_NFS_DRIVER_VERSION') }}
 
     - name: Verify Helm release status
@@ -42,3 +41,36 @@
     - name: Display successful installation message
       ansible.builtin.debug:
         msg: "CSI NFS driver installed and running successfully."
+
+- name: Add retained and ephemeral storage classes
+  hosts: jump_server
+  tasks:
+
+    - name: Create a directory for YAML files
+      ansible.builtin.file:
+        path: /tmp/k8s-manifests
+        state: directory
+
+    - name: Template NFS storage class YAML
+      ansible.builtin.template:
+        src: nfs-storage-class.yml.j2
+        dest: /tmp/k8s-manifests/nfs-storage-class.yml
+        mode: '0644'
+      vars:
+        nfs_server: "{{ lookup('ansible.builtin.env', 'NFS_SERVER_IP') }}"
+        nfs_ephemeral_share: "{{ lookup('ansible.builtin.env', 'NFS_EPHEMERAL_SHARE_PATH') }}"
+        nfs_retained_share: "{{ lookup('ansible.builtin.env', 'NFS_RETAINED_SHARE_PATH') }}"
+
+    - name: Verify that the file was copied
+      ansible.builtin.stat:
+        path: /tmp/k8s-manifests/nfs-storage-class.yml
+      register: storage_class_file
+
+    - name: Apply the storage class manifest using kubectl
+      ansible.builtin.command:
+        cmd: kubectl apply -f /tmp/k8s-manifests/nfs-storage-class.yml
+      register: apply_output
+
+    - name: Display storage class creation result
+      ansible.builtin.debug:
+        msg: "{{ apply_output.stdout }}"
