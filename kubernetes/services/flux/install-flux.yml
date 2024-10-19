@@ -30,7 +30,7 @@
     - name: Display Flux pre-check output
       ansible.builtin.debug:
         msg: "{{ flux_precheck_output.stdout }}"
-      failed_when: "'prerequisites checks passed' not in flux_precheck_output.stdout"
+      failed_when: "'Flux version: flux version' not in flux_precheck_output.stdout"
 
     - name: Add Flux bash completion to profile
       ansible.builtin.lineinfile:
