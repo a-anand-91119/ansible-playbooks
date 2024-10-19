@@ -59,7 +59,7 @@
           --path ./clusters/zeus-k8s
       args:
         executable: /bin/bash
-      changed_when: flux_bootstrap_check.stdout == ""
+      changed_when: flux_bootstrap_check.stderr == ""
       environment:
         GITLAB_TOKEN: "{{ lookup('ansible.builtin.env', 'GITLAB_TOKEN') }}"
 
