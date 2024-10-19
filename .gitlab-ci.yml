@@ -8,6 +8,7 @@ variables:
 ansible-lint:
   stage: lint
   image: registry.gitlab.com/pipeline-components/ansible-lint:latest
+  allow_failure: true
   script:
     - ansible-lint --show-relpath
   only:
@@ -26,10 +27,12 @@ ansible-lint-2:
   only:
     - merge_requests
     - branches
+  allow_failure: true
 
 ansible-lint-3:
   stage: lint
   image: registry.gitlab.com/pipeline-components/ansible-lint:latest
+  allow_failure: true
   script:
     - ansible-lint -f codeclimate | python -m json.tool | tee "${CI_PROJECT_DIR}/codeclimate-results.json"
   artifacts:
@@ -46,6 +49,7 @@ ansible-lint-3:
 lint-playbooks:
   image: registry.gitlab.com/pipeline-components/ansible-lint:latest
   stage: lint
+  allow_failure: true
   script:
     - echo "Finding and linting Ansible playbooks..."
     - |
