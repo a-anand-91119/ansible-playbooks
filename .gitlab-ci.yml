@@ -1,0 +1,23 @@
+stages:
+  - lint
+
+variables:
+  ANSIBLE_VERSION: "2.17.5"
+
+lint-playbooks:
+  image: "cytopia/ansible-lint:latest"
+  stage: lint
+  script:
+    - echo "Finding and linting Ansible playbooks..."
+    - |
+      find . -name "*.yml" -o -name "*.yaml" | while read -r file; do
+        if grep -qE '^( *hosts:| *tasks:)' "$file"; then
+          echo "Linting $file..."
+          ansible-lint "$file" || exit 1
+        else
+          echo "Skipping non-ansible file: $file"
+        fi
+      done
+  only:
+    - merge_requests
+    - branches
