@@ -29,6 +29,10 @@
 
     - name: Display Flux pre-check output
       ansible.builtin.debug:
+        var: flux_precheck_output.stdout
+
+    - name: Display Flux pre-check output
+      ansible.builtin.debug:
         msg: "{{ flux_precheck_output.stdout }}"
       failed_when: "'flux version' not in flux_precheck_output.stdout"
 
