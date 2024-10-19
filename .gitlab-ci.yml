@@ -10,7 +10,7 @@ ansible-lint:
   image: registry.gitlab.com/pipeline-components/ansible-lint:latest
   allow_failure: true
   script:
-    - ansible-lint --show-relpath
+    - ansible-lint --force-color
   only:
     - merge_requests
     - branches
