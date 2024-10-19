@@ -4,7 +4,7 @@
   
   tasks:
     - name: Install required system packages
-      apt:
+      ansible.builtin.apt:
         pkg:
           - apt-transport-https
           - ca-certificates
@@ -15,7 +15,7 @@
         update_cache: true
 
     - name: Install Python dependencies
-      apt:
+      ansible.builtin.apt:
         pkg:
           - python3-pip
           - virtualenv
@@ -40,7 +40,7 @@
         state: present
 
     - name: Update apt and install docker
-      apt:
+      ansible.builtin.apt:
         pkg:
           - docker-ce 
           - docker-ce-cli 

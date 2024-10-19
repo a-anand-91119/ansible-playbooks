@@ -8,7 +8,7 @@
       ignore_errors: true
 
     - name: Remove Docker packages if installed
-      apt:
+      ansible.builtin.apt:
         name: "{{ item }}"
         state: absent
       loop:
@@ -37,6 +37,6 @@
         state: absent
 
     - name: Clean up unused dependencies
-      apt:
+      ansible.builtin.apt:
         autoremove: yes
         purge: yes

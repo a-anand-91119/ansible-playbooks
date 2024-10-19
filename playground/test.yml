@@ -18,7 +18,7 @@
       command: urbackupclientctl set-settings --authkey "35UnMoxTnJ" --name "jump-server" --server-url "urbackup://192.168.0.124:55414"
 
     - name: Ensure INTERNET_ONLY is true in /etc/default/urbackupclient
-      lineinfile:
+      ansible.builtin.lineinfile:
         path: /etc/default/urbackupclient
         regexp: 'INTERNET_ONLY=false'
         line: 'INTERNET_ONLY=true'
@@ -47,12 +47,12 @@
         state: present
 
     - name: Update apt cache
-      apt:
+      ansible.builtin.apt:
         update_cache: yes
         cache_valid_time: 3600
 
     - name: Install dattobd packages
-      apt:
+      ansible.builtin.apt:
         name:
           - dattobd-dkms
           - dattobd-utils

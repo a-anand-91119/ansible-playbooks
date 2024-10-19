@@ -11,7 +11,7 @@
         PATH: "{{ ansible_env.HOME }}/.linkerd2/bin:{{ ansible_env.PATH }}"
 
     - name: Add Linkerd CLI to PATH permanently
-      lineinfile:
+      ansible.builtin.lineinfile:
         path: ~/.bashrc
         regexp: '^export PATH=.*linkerd2/bin'
         line: 'export PATH=$HOME/.linkerd2/bin:$PATH'

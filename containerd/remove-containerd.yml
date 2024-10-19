@@ -6,7 +6,7 @@
   tasks:
 
     - name: Remove containerd packages
-      apt:
+      ansible.builtin.apt:
         name: containerd
         state: absent
         purge: yes

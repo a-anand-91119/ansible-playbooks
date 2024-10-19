@@ -45,7 +45,7 @@
 
   tasks:
     - name: Ensure required packages are installed
-      apt:
+      ansible.builtin.apt:
         name:
           - ca-certificates
           - curl
@@ -111,14 +111,14 @@
         update_cache: yes
 
     - name: "Update cache & Full system update"
-      apt:
+      ansible.builtin.apt:
         update_cache: true
         upgrade: dist
         cache_valid_time: 3600
         force_apt_get: true
 
     - name: Install containerd
-      apt:
+      ansible.builtin.apt:
         name:
           - containerd
         state: present
@@ -135,7 +135,7 @@
         creates: /etc/containerd/config.toml
 
     - name: Update SystemdCgroup to true in containerd config
-      lineinfile:
+      ansible.builtin.lineinfile:
         path: /etc/containerd/config.toml
         regexp: '^(\s*SystemdCgroup\s*=\s*)false'
         line: '            SystemdCgroup = true'

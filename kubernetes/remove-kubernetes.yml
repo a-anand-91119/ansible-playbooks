@@ -9,7 +9,7 @@
       ignore_errors: true
 
     - name: Purge Kubernetes packages
-      apt:
+      ansible.builtin.apt:
         name: "{{ item }}"
         state: absent
         allow_change_held_packages: true
@@ -45,7 +45,7 @@
       ignore_errors: true
 
     - name: Clean up unused dependencies
-      apt:
+      ansible.builtin.apt:
         autoremove: yes
         purge: yes
 
@@ -71,7 +71,7 @@
   tasks:
 
     - name: Remove containerd packages
-      apt:
+      ansible.builtin.apt:
         name: containerd
         state: absent
         purge: yes

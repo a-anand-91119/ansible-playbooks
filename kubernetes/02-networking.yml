@@ -121,7 +121,7 @@
         force: no
 
     - name: Configure sysctl params for Kubernetes.
-      lineinfile:
+      ansible.builtin.lineinfile:
         path: /etc/sysctl.d/99-kubernetes-cri.conf
         line: "{{ item }}"
       with_items:
