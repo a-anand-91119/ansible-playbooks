@@ -38,3 +38,29 @@
         line: . <(flux completion bash)
         create: true
         mode: "0644"
+
+    - name: Check if Flux is already bootstrapped
+      ansible.builtin.command: kubectl get deployment -n flux-system source-controller --ignore-not-found
+      register: flux_bootstrap_check
+      changed_when: false
+
+    - name: Bootstrap Flux with default and extra components
+      ansible.builtin.shell: |
+        flux bootstrap gitlab \
+          --token-auth=false \
+          --ssh-hostname=gitlab.notyouraverage.dev \
+          --read-write-key=true \
+          --repository=flux-bootstrap \
+          --branch=main \
+          --owner={{ lookup('ansible.builtin.env', 'GITLAB_USERNAME') }} \
+          --components source-controller,kustomize-controller,helm-controller,notification-controller \
+          --components-extra image-reflector-controller,image-automation-controller \
+          --cluster-domain cluster.local \
+          --path ./clusters/zeus-k8s
+      args:
+        executable: /bin/bash
+      changed_when: flux_bootstrap_check.stdout == ""
+
+    - name: Check Flux installation
+      ansible.builtin.command: flux check --pre
+      changed_when: false
