@@ -1,0 +1,40 @@
+---
+- name: Setup Flux on Jump Server
+  hosts: jump_server
+  tasks:
+    - name: Download Flux CLI installation script
+      ansible.builtin.get_url:
+        url: https://fluxcd.io/install.sh
+        dest: /tmp/install_flux.sh
+        mode: "0755"
+
+    - name: Run Flux CLI installation script
+      ansible.builtin.command: sudo bash /tmp/install_flux.sh
+      args:
+        creates: /usr/local/bin/flux
+
+    - name: Verify Flux CLI version
+      ansible.builtin.command: flux --version
+      register: flux_version_output
+      changed_when: false
+
+    - name: Display Flux CLI version
+      ansible.builtin.debug:
+        msg: "Flux version: {{ flux_version_output.stdout }}"
+
+    - name: Run Flux pre-check for Kubernetes cluster
+      ansible.builtin.command: flux check --pre
+      register: flux_precheck_output
+      changed_when: false
+
+    - name: Display Flux pre-check output
+      ansible.builtin.debug:
+        msg: "{{ flux_precheck_output.stdout }}"
+      failed_when: "'prerequisites checks passed' not in flux_precheck_output.stdout"
+
+    - name: Add Flux bash completion to profile
+      ansible.builtin.lineinfile:
+        path: "{{ ansible_env.HOME }}/.bashrc"
+        line: . <(flux completion bash)
+        create: true
+        mode: "0644"
