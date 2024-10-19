@@ -7,7 +7,7 @@
 
   tasks:
     - name: Create a new regular user with sudo privileges
-      ansible.builtin.ansible.builtin.user:
+      ansible.builtin.user:
         name: "{{ created_username }}"
         state: present
         groups: sudo
