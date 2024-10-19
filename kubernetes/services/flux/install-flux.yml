@@ -54,7 +54,7 @@
           --cluster-domain cluster.local \
           --owner={{ lookup('ansible.builtin.env', 'GITLAB_USERNAME') }} \
           --hostname={{ lookup('ansible.builtin.env', 'GITLAB_HOSTNAME') }} \
-          --repository={{ lookup('ansible.builtin.env', 'GITLAB_USERNAME') }} \
+          --repository={{ lookup('ansible.builtin.env', 'GITLAB_REPOSITORY') }} \
           --ssh-hostname={{ lookup('ansible.builtin.env', 'GITLAB_SSH_HOSTNAME') }} \
           --components-extra image-reflector-controller,image-automation-controller \
           --components source-controller,kustomize-controller,helm-controller,notification-controller
