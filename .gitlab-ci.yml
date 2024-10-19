@@ -6,7 +6,7 @@ variables:
   ANSIBLE_VERSION: $ANSIBLE_VERSION
 
 lint-playbooks:
-  image: "cytopia/ansible-lint:latest"
+  image: registry.gitlab.com/pipeline-components/ansible-lint:latest
   stage: lint
   script:
     - echo "Finding and linting Ansible playbooks..."
@@ -25,7 +25,7 @@ lint-playbooks:
     - branches
 
 fix-playbooks:
-  image: "cytopia/ansible-lint:latest"
+  image: registry.gitlab.com/pipeline-components/ansible-lint:latest
   stage: fix
   script:
     - echo "Automatically fixing Ansible playbooks..."
