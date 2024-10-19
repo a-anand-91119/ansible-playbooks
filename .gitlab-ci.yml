@@ -51,7 +51,7 @@ fix-playbooks:
   image: registry.gitlab.com/pipeline-components/ansible-lint:latest
   allow_failure: true
   script:
-    - ansible-lint --fix -f codeclimate | python -m json.tool | tee "${CI_PROJECT_DIR}/codeclimate-results.json"
+    - ansible-lint --fix
     - echo -e "Commit changes if any fixes were applied..."
     - git config --global user.email "$GIT_EMAIL"
     - git config --global user.name "$GIT_NAME"
