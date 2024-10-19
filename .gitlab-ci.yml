@@ -44,5 +44,4 @@ fix-playbooks:
 #    - git push origin $CI_COMMIT_REF_NAME
   only:
     - merge_requests
-    - branches
   when: manual
