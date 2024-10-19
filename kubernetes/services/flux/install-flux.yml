@@ -60,6 +60,8 @@
       args:
         executable: /bin/bash
       changed_when: flux_bootstrap_check.stdout == ""
+      environment:
+        GITLAB_TOKEN: "{{ lookup('ansible.builtin.env', 'GITLAB_TOKEN') }}"
 
     - name: Check Flux installation
       ansible.builtin.command: flux check --pre
