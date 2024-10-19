@@ -51,7 +51,6 @@
           --ssh-hostname=gitlab.notyouraverage.dev \
           --hostname=gitlab.notyouraverage.dev \
           --read-write-key=true \
-          --repository=flux-bootstrap \
           --branch=main \
           --owner={{ lookup('ansible.builtin.env', 'GITLAB_USERNAME') }} \
           --components source-controller,kustomize-controller,helm-controller,notification-controller \
