@@ -64,6 +64,11 @@
       environment:
         GITLAB_TOKEN: "{{ lookup('ansible.builtin.env', 'GITLAB_TOKEN') }}"
 
+    - name: Display Flux bootstrap output
+      ansible.builtin.debug:
+        msg: "{{ flux_bootstrap_check.stderr }}"
+#      failed_when: "'prerequisites checks passed' not in flux_precheck_output.stderr"
+
     - name: Check Flux installation
       ansible.builtin.command: flux check --pre
       changed_when: false
