@@ -20,7 +20,7 @@
 
     - name: Display Flux CLI version
       ansible.builtin.debug:
-        msg: "Flux version: {{ flux_version_output.stdout }}"
+        msg: "{{ flux_version_output.stdout }}"
 
     - name: Run Flux pre-check for Kubernetes cluster
       ansible.builtin.command: flux check --pre
