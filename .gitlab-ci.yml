@@ -23,7 +23,7 @@ ansible-lint-2:
     reports:
       junit: ansible-lint.xml
   script:
-    - ansible-lint -f md --force-color | ansible-lint-junit -o ansible-lint.xml
+    - ansible-lint -f md --force-color
   only:
     - merge_requests
     - branches
