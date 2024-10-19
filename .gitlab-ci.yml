@@ -1,8 +1,9 @@
 stages:
   - lint
+  - fix
 
 variables:
-  ANSIBLE_VERSION: "2.17.5"
+  ANSIBLE_VERSION: $ANSIBLE_VERSION
 
 lint-playbooks:
   image: "cytopia/ansible-lint:latest"
@@ -21,3 +22,27 @@ lint-playbooks:
   only:
     - merge_requests
     - branches
+
+fix-playbooks:
+  image: "cytopia/ansible-lint:latest"
+  stage: fix
+  script:
+    - echo "Automatically fixing Ansible playbooks..."
+    - |
+      find . -name "*.yml" -o -name "*.yaml" | while read -r file; do
+        if grep -qE '^( *hosts:| *tasks:)' "$file"; then
+          echo "Fixing $file..."
+          ansible-lint --fix "$file" || exit 1
+        else
+          echo "Skipping non-ansible file: $file"
+        fi
+      done
+    - echo "Commit changes if any fixes were applied..."
+    - git config --global user.email "$GIT_EMAIL"
+    - git config --global user.name "$GIT_NAME"
+    - git diff --quiet || git commit -am "Auto-fixed playbook issues"
+#    - git push origin $CI_COMMIT_REF_NAME
+  only:
+    - merge_requests
+    - branches
+  when: manual

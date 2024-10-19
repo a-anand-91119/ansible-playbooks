@@ -32,7 +32,7 @@
         creates: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
 
     - name: Add Kubernetes apt repository
-      copy:
+      ansible.builtin.copy:
         dest: /etc/apt/sources.list.d/kubernetes.list
         content: 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/{{ lookup("ansible.builtin.env", "KUBERNETES_VERSION") }}/deb/ /'
         owner: root

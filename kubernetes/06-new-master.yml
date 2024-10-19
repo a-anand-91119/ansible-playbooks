@@ -19,7 +19,7 @@
         msg: "{{ kubernetes_master_join_command.stdout_lines }}"
 
     - name: Copy the K8s Join command for new master node to file on master
-      copy:
+      ansible.builtin.copy:
         content: "{{ kubernetes_master_join_command.stdout_lines[0] }}"
         dest: "/tmp/kubernetes_master_join_command"
 
@@ -77,7 +77,7 @@
   tasks:
 
     - name: Copy manifests to new master node
-      copy:
+      ansible.builtin.copy:
         src: "/tmp/kubernetes/manifests/"
         dest: "/home/{{ ansible_user }}/"
         mode: 0644
@@ -85,7 +85,7 @@
         - super-admin.conf
 
     - name: Copy super-admin conf to new master node
-      copy:
+      ansible.builtin.copy:
         src: "/tmp/kubernetes/"
         dest: "/home/{{ ansible_user }}/"
         mode: 0644
@@ -113,7 +113,7 @@
   tasks:
 
     - name: Copy CA certificates and keys to new master node
-      copy:
+      ansible.builtin.copy:
         src: "/tmp/certificates/control_plane/"
         dest: "/home/{{ ansible_user }}/"
         mode: 0644
@@ -160,7 +160,7 @@
   tasks:
 
     - name: Copy the K8s join command to the new master node
-      copy:
+      ansible.builtin.copy:
         src: /tmp/kubernetes_master_join_command
         dest: /tmp/kubernetes_master_join_command
         mode: 0777

@@ -39,7 +39,7 @@
 #      shell: kubectl -n longhorn-system create secret generic basic-auth --from-file=/tmp/auth
 #
 #    - name: Create Longhorn Ingress manifest
-#      copy:
+#      ansible.builtin.copy:
 #        dest: /tmp/longhorn-ingress.yml
 #        content: |
 #          apiVersion: networking.k8s.io/v1
