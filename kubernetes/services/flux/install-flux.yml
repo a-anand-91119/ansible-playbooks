@@ -47,16 +47,17 @@
     - name: Bootstrap Flux with default and extra components
       ansible.builtin.shell: |
         flux bootstrap gitlab \
+          --private \
           --token-auth=false \
-          --owner={{ lookup('ansible.builtin.env', 'GITLAB_USERNAME') }} \
-          --repository=flux-bootstrap \
-          --hostname=gitlab.notyouraverage.dev \
           --read-write-key=true \
-          --ssh-hostname=gitlab.notyouraverage.dev \
-          --components source-controller,kustomize-controller,helm-controller,notification-controller \
-          --components-extra image-reflector-controller,image-automation-controller \
+          --path clusters/zeus-k8s \
           --cluster-domain cluster.local \
-          --path ./clusters/zeus-k8s
+          --owner={{ lookup('ansible.builtin.env', 'GITLAB_USERNAME') }} \
+          --hostname={{ lookup('ansible.builtin.env', 'GITLAB_HOSTNAME') }} \
+          --repository={{ lookup('ansible.builtin.env', 'GITLAB_USERNAME') }} \
+          --ssh-hostname={{ lookup('ansible.builtin.env', 'GITLAB_SSH_HOSTNAME') }} \
+          --components-extra image-reflector-controller,image-automation-controller \
+          --components source-controller,kustomize-controller,helm-controller,notification-controller
       args:
         executable: /bin/bash
       changed_when: flux_bootstrap_check.stderr == ""
