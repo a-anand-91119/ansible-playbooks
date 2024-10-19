@@ -48,11 +48,11 @@
       ansible.builtin.shell: |
         flux bootstrap gitlab \
           --token-auth=false \
-          --ssh-hostname=gitlab.notyouraverage.dev \
+          --owner={{ lookup('ansible.builtin.env', 'GITLAB_USERNAME') }} \
+          --repository=flux-bootstrap \
           --hostname=gitlab.notyouraverage.dev \
           --read-write-key=true \
-          --branch=main \
-          --owner={{ lookup('ansible.builtin.env', 'GITLAB_USERNAME') }} \
+          --ssh-hostname=gitlab.notyouraverage.dev \
           --components source-controller,kustomize-controller,helm-controller,notification-controller \
           --components-extra image-reflector-controller,image-automation-controller \
           --cluster-domain cluster.local \
