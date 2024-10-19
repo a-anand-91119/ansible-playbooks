@@ -1,8 +1,7 @@
 ---
-- hosts: control_plane
+- name: Setup kube-vip floating ip
+  hosts: control_plane
   become: true
-  name: Setup kube-vip floating ip
-
   tasks:
     - name: Ensure jq and curl are installed
       ansible.builtin.package:
@@ -22,7 +21,7 @@
         state: directory
         owner: root
         group: root
-        mode: '0755'
+        mode: "0755"
 
     - name: Set kube-vip environment variables
       ansible.builtin.set_fact:
@@ -43,41 +42,42 @@
     - name: Replace admin.conf with super-admin.conf in kube-vip manifest
       ansible.builtin.replace:
         path: /etc/kubernetes/manifests/kube-vip.yaml
-        regexp: 'path: /etc/kubernetes/admin.conf'
-        replace: 'path: /etc/kubernetes/super-admin.conf'
+        regexp: "path: /etc/kubernetes/admin.conf"
+        replace: "path: /etc/kubernetes/super-admin.conf"
 
     - name: Display kube-vip manifest creation output
-      debug:
+      ansible.builtin.debug:
         var: manifest_output.stdout
 
     - name: Copy kube-vip manifest to all control plane nodes
       ansible.builtin.copy:
         src: /etc/kubernetes/manifests/kube-vip.yaml
         dest: /etc/kubernetes/manifests/kube-vip.yaml
-        mode: '0644'
+        mode: "0644"
         owner: root
         group: root
       when: inventory_hostname != groups['control_plane'][0]
 
 - hosts: control_plane
+  name: Initialize a new kubernetes cluster from control plane node
   become: true
 
   tasks:
     - name: Pulling images required for setting up a Kubernetes cluster
-      shell: kubeadm config images pull
+      ansible.builtin.command: kubeadm config images pull
 
     - name: Download runc binary
       ansible.builtin.get_url:
         url: https://github.com/opencontainers/runc/releases/download/{{ lookup('ansible.builtin.env', 'RUNC_VERSION') }}/runc.amd64
         dest: /tmp/runc.amd64
-        mode: '0755'
+        mode: "0755"
 
     - name: Install runc binary
       ansible.builtin.command:
         cmd: install -m 755 /tmp/runc.amd64 /usr/local/sbin/runc
 
     - name: Run kubeadm init with control plane endpoint
-      shell: |
+      ansible.builtin.shell: |
         kubeadm init \
         --apiserver-advertise-address={{ hostvars[inventory_hostname]['ansible_host'] }} \
         --apiserver-cert-extra-sans={{ lookup('ansible.builtin.env', 'TAILSCALE_JUMP_SERVER_VPN_IP') }} \
@@ -88,37 +88,39 @@
         executable: /bin/bash
       register: myshell_output
 
-    - debug: msg="{{ myshell_output.stdout }}"
+    - ansible.builtin.debug:
+        msg: '"{{ myshell_output.stdout }}"'
 
     - name: Create .kube directory
       become: true
       become_user: admin
-      file:
+      ansible.builtin.file:
         path: $HOME/.kube
         state: directory
-        mode: 0755
+        mode: "0755"
 
     - name: Copy admin.conf to user's kube config
       ansible.builtin.copy:
         src: /etc/kubernetes/admin.conf
         dest: /home/admin/.kube/config
-        remote_src: yes
+        remote_src: true
         owner: admin
 
 - hosts: control_plane
+  name: Setup Calico CNI
   tasks:
-
     - name: Check if Kubernetes cluster is running
-      command: kubectl cluster-info
+      ansible.builtin.command: kubectl cluster-info
       register: cluster_info
       ignore_errors: true
 
     - name: Print cluster status
-      debug:
+      ansible.builtin.debug:
         var: cluster_info
 
     - name: Create Calico Operator using kubectl
-      shell: kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/{{ lookup('ansible.builtin.env', 'CALICO_VERSION') }}/manifests/tigera-operator.yaml --validate=false
+      ansible.builtin.command: kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/{{ lookup('ansible.builtin.env', 'CALICO_VERSION') }}/manifests/tigera-operator.yaml
+        --validate=false
       register: tigera_operator_output
 
     - name: Download Calico Custom Resources manifest
@@ -129,20 +131,21 @@
     - name: Change cidr value in the custom-resources.yaml
       ansible.builtin.replace:
         path: /tmp/custom-resources.yaml
-        regexp: 'cidr: 192\.168\.0\.0/16'
+        regexp: "cidr: 192\\.168\\.0\\.0/16"
         replace: "cidr: {{ lookup('ansible.builtin.env', 'POD_NETWORK_CIDR') }}"
 
     - name: Apply Custom Resources manifest using kubectl
-      shell: kubectl apply -f /tmp/custom-resources.yaml
+      ansible.builtin.command: kubectl apply -f /tmp/custom-resources.yaml
       register: calico_custom_resources_output
 
     - name: Ensure Tigera Operator was created successfully
-      debug:
+      ansible.builtin.debug:
         msg: "{{ tigera_operator_output.stdout }}"
 
     - name: Ensure Calico Custom Resources applied successfully
-      debug:
+      ansible.builtin.debug:
         msg: "{{ calico_custom_resources_output.stdout }}"
+
 #
 #- hosts: control_plane
 #  name: Update kube-vip to use admin instead of super admin

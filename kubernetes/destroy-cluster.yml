@@ -1,28 +1,29 @@
 ---
 - hosts: all
+  name: Destroy the existing kubernetes cluster
   become: true
 
   tasks:
     - name: Reset Kubernetes cluster (removes all nodes and config)
-      command: kubeadm reset --force
+      ansible.builtin.command: kubeadm reset --force
       ignore_errors: true
 
     - name: Remove Kubernetes configuration directory
       become: true
       become_user: admin
-      file:
+      ansible.builtin.file:
         path: ~/.kube
         state: absent
 
     - name: Remove LInkerd configuration directory
       become: true
       become_user: admin
-      file:
+      ansible.builtin.file:
         path: ~/.linkerd2
         state: absent
 
     - name: Remove network interface configurations (CNI)
-      command: rm -rf /etc/cni/net.d
+      ansible.builtin.command: rm -rf /etc/cni/net.d
       ignore_errors: true
 
     - name: Flush all iptables rules
@@ -33,7 +34,7 @@
       timeout: 10
 
     - name: Clean up any additional containerd artifacts
-      shell: |
+      ansible.builtin.shell: |
         ctr -n k8s.io container ls | awk '{print $1}' | xargs --no-run-if-empty ctr -n k8s.io container rm
         ctr -n k8s.io image ls | awk '{print $1}' | xargs --no-run-if-empty ctr -n k8s.io image rm
       ignore_errors: true

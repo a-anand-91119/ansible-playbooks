@@ -3,24 +3,24 @@
   hosts: jump_server
   tasks:
     - name: Ensure Helm is installed
-      command: helm version
-      ignore_errors: yes
+      ansible.builtin.command: helm version
+      ignore_errors: true
 
     - name: Add GitLab Helm repository
-      command: helm repo add gitlab https://charts.gitlab.io
+      ansible.builtin.command: helm repo add gitlab https://charts.gitlab.io
       args:
         creates: ~/.cache/helm/repository/gitlab-index.yaml
 
     - name: Update GitLab Helm repository
-      command: helm repo update gitlab
+      ansible.builtin.command: helm repo update gitlab
 
     - name: Generate values.yaml for GitLab Runner
-      template:
+      ansible.builtin.template:
         src: values.yaml.j2
         dest: /tmp/values.yaml
 
     - name: Install GitLab Runner with Helm
-      command: >
+      ansible.builtin.command: >
         helm install \
           gitlab-runner -f /tmp/values.yaml \
           gitlab/gitlab-runner \
@@ -28,4 +28,4 @@
           --create-namespace
 
     - name: Verify runner installation
-      command: kubectl get pods -n gitlab_runner
+      ansible.builtin.command: kubectl get pods -n gitlab_runner

@@ -1,6 +1,7 @@
 ---
-- hosts: control_plane
+- name: Install and setup Metrics Server
+  hosts: jump_server
   tasks:
-
     - name: Install Metrics Server using the official manifests
-      command: kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/high-availability-1.21+.yaml
+      ansible.builtin.command: kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/high-availability-1.21+.yaml
+  # TODO: need to add the tls skip flag  '--kubelet-insecure-tls' to metrics-server deployment

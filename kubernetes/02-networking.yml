@@ -1,5 +1,6 @@
 ---
 - hosts: all
+  name: Perform all network related prerequisites for kubernetes
   become: true
 
   tasks:
@@ -10,56 +11,56 @@
         proto: "{{ item.proto }}"
         comment: "{{ item.comment }}"
       with_items:
-        - { port: 22, proto: tcp, comment: "SSH Port" }
-        - { port: 80, proto: tcp, comment: "HTTP Port" }
-        - { port: 179, proto: tcp, comment: "Calico BGP Port" }
-        - { port: 443, proto: tcp, comment: "HTTPS Port / Kubernetes API" }
-        - { port: 1338, proto: tcp, comment: "Containerd Metrics port" }
-        - { port: 2376, proto: tcp, comment: "Node driver Docker daemon TLS port" }
-        - { port: 2379, proto: tcp, comment: "Etcd client requests" }
-        - { port: 2380, proto: tcp, comment: "Etcd peer communication" }
-        - { port: 2381, proto: tcp, comment: "Etcd events peering" }
-        - { port: 3988, proto: tcp, comment: "Kops controller serving port" }
-        - { port: 3989, proto: tcp, comment: "Node local dns health check" }
-        - { port: 3990, proto: tcp, comment: "Kube API health check" }
-        - { port: 3991, proto: tcp, comment: "Etcd-manager - cilium - grpc" }
-        - { port: 3992, proto: tcp, comment: "Etcd-manager - cilium - quarantined" }
-        - { port: 3993, proto: tcp, comment: "Dns gossip - dns-controller - member list" }
-        - { port: 3994, proto: tcp, comment: "Etcd-manager - main - quarantined" }
-        - { port: 3995, proto: tcp, comment: "Etcd-manager - events - quarantined" }
-        - { port: 3996, proto: tcp, comment: "Etcd-manager - main - grpc" }
-        - { port: 3997, proto: tcp, comment: "Etcd-manager - events - grpc" }
-        - { port: 3998, proto: tcp, comment: "Dns gossip - protokube - weave mesh" }
-        - { port: 3999, proto: tcp, comment: "Dns gossip - dns-controller - weave mesh" }
-        - { port: 4000, proto: tcp, comment: "Protokube gossip member list" }
-        - { port: 4001, proto: tcp, comment: "Etcd main client" }
-        - { port: 4002, proto: tcp, comment: "Etcd events client" }
-        - { port: 4149, proto: tcp, comment: "BGP Peer Port" }
-        - { port: 4789, proto: udp, comment: "Flannel VXLAN overlay networking on Windows cluster" }
-        - { port: 5473, proto: tcp, comment: "BGP Peer Port" }
-        - { port: 6443, proto: tcp, comment: "Kubernetes API Server port" }
-        - { port: 6783, proto: tcp, comment: "Weave Port" }
-        - { port: 6783:6784, proto: udp, comment: "Weave UDP Ports" }
-        - { port: 6942, proto: tcp, comment: "Cilium operator prometheus port" }
-        - { port: 8472, proto: udp, comment: "Canal or Flannel VXLAN overlay networking" }
-        - { port: 9090, proto: tcp, comment: "Cilium prometheus port" }
-        - { port: 9091, proto: tcp, comment: "Cilium hubble prometheus port" }
-#        - { port: 9099, proto: tcp, comment: "Canal or Flannel livenessProbe or readinessProbe" }
-        - { port: 9443, proto: tcp, comment: "Rancher webhook" }
-        - { port: 9796, proto: tcp, comment: "Default port required by Monitoring to scrape metrics from Linux and Windows node-exporters" }
-        - { port: 10248, proto: tcp, comment: "Localhost healthz endpoint" }
-        - { port: 10249, proto: tcp, comment: "Port for the metrics server to serve on" }
-        - { port: 10250, proto: tcp, comment: "Metrics server communication with all nodes API" }
-        - { port: 10251:10252, proto: tcp, comment: "Port on which to serve HTTP insecurely" }
-        - { port: 10254, proto: tcp, comment: "Ingress controller livenessProbe/readinessProbe" }
-        - { port: 10255, proto: tcp, comment: "Read only port for the Kubelet" }
-        - { port: 10256, proto: tcp, comment: "Port to bind the health check server" }
-        - { port: 10257, proto: tcp, comment: "Kube-controller-manager port" }
-        - { port: 10259, proto: tcp, comment: "Kube-scheduler port" }
-        - { port: 19001, proto: tcp, comment: "SSL encrypted. Client certificates required to connect" }
-        - { port: 25000, proto: tcp, comment: "Proper token required to authorise actions" }
-        - { port: 30000:32767, proto: tcp, comment: "NodePort Services" }
-        - { port: 30000:32767, proto: udp, comment: "NodePort Services" }
+        - { port: 22, proto: tcp, comment: SSH Port }
+        - { port: 80, proto: tcp, comment: HTTP Port }
+        - { port: 179, proto: tcp, comment: Calico BGP Port }
+        - { port: 443, proto: tcp, comment: HTTPS Port / Kubernetes API }
+        - { port: 1338, proto: tcp, comment: Containerd Metrics port }
+        - { port: 2376, proto: tcp, comment: Node driver Docker daemon TLS port }
+        - { port: 2379, proto: tcp, comment: Etcd client requests }
+        - { port: 2380, proto: tcp, comment: Etcd peer communication }
+        - { port: 2381, proto: tcp, comment: Etcd events peering }
+        - { port: 3988, proto: tcp, comment: Kops controller serving port }
+        - { port: 3989, proto: tcp, comment: Node local dns health check }
+        - { port: 3990, proto: tcp, comment: Kube API health check }
+        - { port: 3991, proto: tcp, comment: Etcd-manager - cilium - grpc }
+        - { port: 3992, proto: tcp, comment: Etcd-manager - cilium - quarantined }
+        - { port: 3993, proto: tcp, comment: Dns gossip - dns-controller - member list }
+        - { port: 3994, proto: tcp, comment: Etcd-manager - main - quarantined }
+        - { port: 3995, proto: tcp, comment: Etcd-manager - events - quarantined }
+        - { port: 3996, proto: tcp, comment: Etcd-manager - main - grpc }
+        - { port: 3997, proto: tcp, comment: Etcd-manager - events - grpc }
+        - { port: 3998, proto: tcp, comment: Dns gossip - protokube - weave mesh }
+        - { port: 3999, proto: tcp, comment: Dns gossip - dns-controller - weave mesh }
+        - { port: 4000, proto: tcp, comment: Protokube gossip member list }
+        - { port: 4001, proto: tcp, comment: Etcd main client }
+        - { port: 4002, proto: tcp, comment: Etcd events client }
+        - { port: 4149, proto: tcp, comment: BGP Peer Port }
+        - { port: 4789, proto: udp, comment: Flannel VXLAN overlay networking on Windows cluster }
+        - { port: 5473, proto: tcp, comment: BGP Peer Port }
+        - { port: 6443, proto: tcp, comment: Kubernetes API Server port }
+        - { port: 6783, proto: tcp, comment: Weave Port }
+        - { port: 6783:6784, proto: udp, comment: Weave UDP Ports }
+        - { port: 6942, proto: tcp, comment: Cilium operator prometheus port }
+        - { port: 8472, proto: udp, comment: Canal or Flannel VXLAN overlay networking }
+        - { port: 9090, proto: tcp, comment: Cilium prometheus port }
+        - { port: 9091, proto: tcp, comment: Cilium hubble prometheus port }
+        #        - { port: 9099, proto: tcp, comment: "Canal or Flannel livenessProbe or readinessProbe" }
+        - { port: 9443, proto: tcp, comment: Rancher webhook }
+        - { port: 9796, proto: tcp, comment: Default port required by Monitoring to scrape metrics from Linux and Windows node-exporters }
+        - { port: 10248, proto: tcp, comment: Localhost healthz endpoint }
+        - { port: 10249, proto: tcp, comment: Port for the metrics server to serve on }
+        - { port: 10250, proto: tcp, comment: Metrics server communication with all nodes API }
+        - { port: 10251:10252, proto: tcp, comment: Port on which to serve HTTP insecurely }
+        - { port: 10254, proto: tcp, comment: Ingress controller livenessProbe/readinessProbe }
+        - { port: 10255, proto: tcp, comment: Read only port for the Kubelet }
+        - { port: 10256, proto: tcp, comment: Port to bind the health check server }
+        - { port: 10257, proto: tcp, comment: Kube-controller-manager port }
+        - { port: 10259, proto: tcp, comment: Kube-scheduler port }
+        - { port: 19001, proto: tcp, comment: SSL encrypted. Client certificates required to connect }
+        - { port: 25000, proto: tcp, comment: Proper token required to authorise actions }
+        - { port: 30000:32767, proto: tcp, comment: NodePort Services }
+        - { port: 30000:32767, proto: udp, comment: NodePort Services }
 
     - name: Enable UFW
       community.general.ufw:
@@ -72,15 +73,15 @@
     - name: Ensure hostname is reflected in /etc/hosts
       ansible.builtin.lineinfile:
         path: /etc/hosts
-        regexp: "^127\\.0\\.1\\.1\\s+"
-        line: "127.0.1.1 {{ inventory_hostname }}"
+        regexp: ^127\.0\.1\.1\s+
+        line: 127.0.1.1 {{ inventory_hostname }}
         state: present
 
     - name: Disable cloud-init's network configuration
       ansible.builtin.file:
         path: /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg
         state: touch
-        mode: '0644'
+        mode: "0644"
 
     - name: Write content to disable cloud-init network configuration
       ansible.builtin.copy:
@@ -89,7 +90,7 @@
           network: {config: disabled}
         owner: root
         group: root
-        mode: '0644'
+        mode: "0644"
 
     - name: Create netplan config for static IP
       ansible.builtin.copy:
@@ -109,7 +110,7 @@
                   addresses: {{ hostvars[inventory_hostname]['nameservers'] }}
         owner: root
         group: root
-        mode: '0600'
+        mode: "0600"
 
     - name: Apply netplan configuration
       ansible.builtin.command: netplan apply
@@ -118,16 +119,16 @@
       ansible.builtin.copy:
         content: ""
         dest: /etc/sysctl.d/99-kubernetes-cri.conf
-        force: no
+        force: false
 
     - name: Configure sysctl params for Kubernetes.
       ansible.builtin.lineinfile:
         path: /etc/sysctl.d/99-kubernetes-cri.conf
         line: "{{ item }}"
       with_items:
-        - 'net.bridge.bridge-nf-call-iptables  = 1'
-        - 'net.bridge.bridge-nf-call-ip6tables = 1'
-        - 'net.ipv4.ip_forward                 = 1'
+        - net.bridge.bridge-nf-call-iptables  = 1
+        - net.bridge.bridge-nf-call-ip6tables = 1
+        - net.ipv4.ip_forward                 = 1
 
     - name: Apply sysctl params without reboot.
       command: sysctl --system
@@ -139,11 +140,11 @@
       command: sysctl -p /etc/sysctl.conf
 
     - name: Verify sysctl params
-      shell: "sysctl {{ item }}"
+      shell: sysctl {{ item }}
       with_items:
-        - 'net.bridge.bridge-nf-call-iptables'
-        - 'net.bridge.bridge-nf-call-ip6tables'
-        - 'net.ipv4.ip_forward'
+        - net.bridge.bridge-nf-call-iptables
+        - net.bridge.bridge-nf-call-ip6tables
+        - net.ipv4.ip_forward
       register: sysctl_check
 
     - name: Display verification results
@@ -152,18 +153,19 @@
 
     - name: Download CNI plugins
       ansible.builtin.get_url:
-        url: https://github.com/containernetworking/plugins/releases/download/{{ lookup('ansible.builtin.env', 'CNI_PLUGIN_VERSION') }}/cni-plugins-linux-amd64-{{ lookup('ansible.builtin.env', 'CNI_PLUGIN_VERSION') }}.tgz
+        url: https://github.com/containernetworking/plugins/releases/download/{{ lookup('ansible.builtin.env', 'CNI_PLUGIN_VERSION') }}/cni-plugins-linux-amd64-{{
+          lookup('ansible.builtin.env', 'CNI_PLUGIN_VERSION') }}.tgz
         dest: /tmp/cni-plugins-linux-amd64-{{ lookup('ansible.builtin.env', 'CNI_PLUGIN_VERSION') }}.tgz
 
     - name: Create CNI bin directory
       ansible.builtin.file:
         path: /opt/cni/bin
         state: directory
-        mode: '0755'
+        mode: "0755"
 
     - name: Extract CNI plugins
       ansible.builtin.unarchive:
         src: /tmp/cni-plugins-linux-amd64-{{ lookup('ansible.builtin.env', 'CNI_PLUGIN_VERSION') }}.tgz
         dest: /opt/cni/bin
-        remote_src: yes
-        extra_opts: [ '--strip-components=1' ]
+        remote_src: true
+        extra_opts: [--strip-components=1]

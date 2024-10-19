@@ -1,18 +1,17 @@
 ---
-- hosts: all
-  name: Remove containerd runtime
+- name: Remove containerd runtime
+  hosts: all
   become: true
 
   tasks:
-
     - name: Remove containerd packages
       ansible.builtin.apt:
         name: containerd
         state: absent
-        purge: yes
+        purge: true
 
     - name: Remove containerd directories
-      file:
+      ansible.builtin.file:
         path: "{{ item }}"
         state: absent
       with_items:

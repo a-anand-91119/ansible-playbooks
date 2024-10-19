@@ -1,54 +1,53 @@
 ---
 - name: Install UrBackup Client
   hosts: jump_server
-  become: yes
+  become: true
   tasks:
     - name: Download UrBackup client installer
-      get_url:
-        url: "https://hndl.urbackup.org/Client/2.5.25/UrBackup%20Client%20Linux%202.5.25.sh"
-        dest: "/tmp/urbackup_client.sh"
-        mode: '0755'
+      ansible.builtin.get_url:
+        url: https://hndl.urbackup.org/Client/2.5.25/UrBackup%20Client%20Linux%202.5.25.sh
+        dest: /tmp/urbackup_client.sh
+        mode: "0755"
 
     - name: Run UrBackup installer script
-      command: "sh /tmp/urbackup_client.sh"
+      ansible.builtin.command: sh /tmp/urbackup_client.sh
       args:
-        removes: "/tmp/urbackup_client.sh"
+        removes: /tmp/urbackup_client.sh
 
     - name: Enable Internet mode for UrBackup client
-      command: urbackupclientctl set-settings --authkey "35UnMoxTnJ" --name "jump-server" --server-url "urbackup://192.168.0.124:55414"
-
+      ansible.builtin.command: urbackupclientctl set-settings --authkey "35UnMoxTnJ" --name "jump-server" --server-url "urbackup://192.168.0.124:55414"
     - name: Ensure INTERNET_ONLY is true in /etc/default/urbackupclient
       ansible.builtin.lineinfile:
         path: /etc/default/urbackupclient
-        regexp: 'INTERNET_ONLY=false'
-        line: 'INTERNET_ONLY=true'
+        regexp: INTERNET_ONLY=false
+        line: INTERNET_ONLY=true
         state: present
       when: ansible_facts['os_family'] == 'Debian'
 
     - name: Remove installer script
-      file:
-        path: "/tmp/urbackup_client.sh"
+      ansible.builtin.file:
+        path: /tmp/urbackup_client.sh
         state: absent
 
 - name: Install dattobd for snapshots and incremental backups
   hosts: jump_server
-  become: yes
+  become: true
   tasks:
     - name: Add Datto GPG key
-      apt_key:
-        url: "https://cpkg.datto.com/DATTO-PKGS-GPG-KEY"
+      ansible.builtin.apt_key:
+        url: https://cpkg.datto.com/DATTO-PKGS-GPG-KEY
         state: present
 
     - name: Add Datto repository to sources list
-      apt_repository:
+      ansible.builtin.apt_repository:
         # TODO: update the below line when proper releases are available
-        repo: "deb [trusted=yes arch=amd64] https://cpkg.datto.com/datto-deb/public/jammy jammy main"
-        filename: "datto-linux-agent"
+        repo: deb [trusted=yes arch=amd64] https://cpkg.datto.com/datto-deb/public/jammy jammy main
+        filename: datto-linux-agent
         state: present
 
     - name: Update apt cache
       ansible.builtin.apt:
-        update_cache: yes
+        update_cache: true
         cache_valid_time: 3600
 
     - name: Install dattobd packages

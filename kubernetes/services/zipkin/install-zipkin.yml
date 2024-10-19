@@ -1,18 +1,18 @@
-- hosts: jump_server
-  name: "Install ZipKin"
-
+---
+- name: Install ZipKin
+  hosts: jump_server
   tasks:
     - name: Add the Zipkin Helm repository
-      shell: "helm repo add bitnami https://charts.bitnami.com/bitnami"
+      ansible.builtin.command: helm repo add bitnami https://charts.bitnami.com/bitnami
       args:
         creates: ~/.cache/helm/repository/bitnami-index.yaml
 
     - name: Update Helm repositories
-      shell: "helm repo update"
+      ansible.builtin.command: helm repo update
       register: helm_repo_update_output
 
     - name: Install Zipkin in the default namespace
-      shell: |
+      ansible.builtin.shell: |
         helm install my-zipkin bitnami/zipkin \
           --set linkerd.injector.enabled=true \
           --version {{ lookup('ansible.builtin.env', 'ZIPKIN_VERSION') }}
@@ -21,9 +21,9 @@
       ignore_errors: true # TODO: THis needs to be removed
 
     - name: Verify Zipkin installation by checking pods
-      shell: "kubectl  get pod"
+      ansible.builtin.command: kubectl  get pod
       register: zipkin_pods_output
 
     - name: Display running ZipKin pods
-      debug:
+      ansible.builtin.debug:
         var: zipkin_pods_output.stdout

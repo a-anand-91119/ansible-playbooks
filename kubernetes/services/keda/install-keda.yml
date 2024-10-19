@@ -1,18 +1,18 @@
-- hosts: jump_server
-  name: "Install KEDAs Auto Scaler"
-
+---
+- name: Install KEDAs Auto Scaler
+  hosts: jump_server
   tasks:
     - name: Add the KEDAs Helm repository
-      shell: "helm repo add kedacore https://kedacore.github.io/charts"
+      ansible.builtin.command: helm repo add kedacore https://kedacore.github.io/charts
       args:
         creates: ~/.cache/helm/repository/kedacore-index.yaml
 
     - name: Update Helm repositories
-      shell: "helm repo update"
+      ansible.builtin.command: helm repo update
       register: helm_repo_update_output
 
     - name: Install KEDAs in the keda namespace
-      shell: |
+      ansible.builtin.shell: |
         helm install keda kedacore/keda \
           --namespace keda \
           --create-namespace
@@ -21,9 +21,9 @@
       ignore_errors: true
 
     - name: Verify Kedas installation by checking pods
-      shell: "kubectl -n keda get pod"
+      ansible.builtin.command: kubectl -n keda get pod
       register: keda_pods_output
 
     - name: Display running KEDA pods
-      debug:
+      ansible.builtin.debug:
         var: keda_pods_output.stdout

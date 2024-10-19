@@ -1,16 +1,16 @@
 ---
 - hosts: control_plane
+  name: Get kubernetes config from control plane node
   tasks:
     - name: Copy kube config file from control_plane to local Ansible server
       fetch:
-        src: "/home/admin/.kube/config"
-        dest: "/tmp/kube_config"
-        flat: yes
+        src: /home/admin/.kube/config
+        dest: /tmp/kube_config
+        flat: true
 
 - hosts: jump_server
-  name: "Setup kube config in jump server"
+  name: Setup kube config in jump server
   tasks:
-
     - name: Allow Kubernetes control plane ports in UFW
       become: true
       community.general.ufw:
@@ -19,7 +19,7 @@
         proto: "{{ item.proto }}"
         comment: "{{ item.comment }}"
       with_items:
-        - { port: 3000, proto: tcp, comment: "Semaphore UI Port" }
+        - { port: 3000, proto: tcp, comment: Semaphore UI Port }
 
     - name: Create .kube directory
       become: true
@@ -27,23 +27,23 @@
       file:
         path: $HOME/.kube
         state: directory
-        mode: '0755'
+        mode: "0755"
 
     - name: Copy the kube config to the jump server
       ansible.builtin.copy:
         src: /tmp/kube_config
         dest: $HOME/.kube/config
-        mode: 0600
+        mode: "0600"
 
 - hosts: jump_server
-  name: "Install Helm"
+  name: Install Helm
 
   tasks:
     - name: Download the Helm install script
       get_url:
         url: https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
         dest: /tmp/get_helm.sh
-        mode: '0700'
+        mode: "0700"
 
     - name: Run the Helm install script
       shell: ./get_helm.sh
@@ -51,6 +51,6 @@
         chdir: /tmp
 
     - name: Verify Helm installation
-      shell: "helm version"
+      shell: helm version
       register: helm_version_output
       changed_when: false

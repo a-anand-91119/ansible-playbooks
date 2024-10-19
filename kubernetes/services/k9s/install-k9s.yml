@@ -1,7 +1,7 @@
 ---
 - name: Install K9s on Linux
   hosts: jump_server
-  become: yes
+  become: true
   tasks:
     - name: Download K9s deb package
       ansible.builtin.get_url:

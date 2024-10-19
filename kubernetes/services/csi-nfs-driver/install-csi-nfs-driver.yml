@@ -3,15 +3,15 @@
   hosts: jump_server
   tasks:
     - name: Add CSI NFS Helm repository
-      shell: helm repo add csi-driver-nfs https://raw.githubusercontent.com/kubernetes-csi/csi-driver-nfs/master/charts
+      ansible.builtin.command: helm repo add csi-driver-nfs https://raw.githubusercontent.com/kubernetes-csi/csi-driver-nfs/master/charts
       args:
         creates: ~/.cache/helm/repository/csi-driver-nfs-index.yaml
 
     - name: Update Helm repository
-      shell: "helm repo update"
+      ansible.builtin.command: helm repo update
 
     - name: Install/Upgrade CSI NFS Driver
-      shell: |
+      ansible.builtin.shell: |
         helm upgrade --install csi-driver-nfs2 csi-driver-nfs/csi-driver-nfs \
           --namespace kube-system \
           --set externalSnapshotter.enabled=true \
@@ -40,12 +40,11 @@
 
     - name: Display successful installation message
       ansible.builtin.debug:
-        msg: "CSI NFS driver installed and running successfully."
+        msg: CSI NFS driver installed and running successfully.
 
 - name: Add retained and ephemeral storage classes
   hosts: jump_server
   tasks:
-
     - name: Create a directory for YAML files
       ansible.builtin.file:
         path: /tmp/k8s-manifests
@@ -55,7 +54,7 @@
       ansible.builtin.template:
         src: nfs-storage-class.yml.j2
         dest: /tmp/k8s-manifests/nfs-storage-class.yml
-        mode: '0644'
+        mode: "0644"
       vars:
         nfs_server: "{{ lookup('ansible.builtin.env', 'NFS_SERVER_IP') }}"
         nfs_ephemeral_share: "{{ lookup('ansible.builtin.env', 'NFS_EPHEMERAL_SHARE_PATH') }}"
