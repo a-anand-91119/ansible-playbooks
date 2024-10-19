@@ -10,6 +10,9 @@ ansible-lint:
   image: registry.gitlab.com/pipeline-components/ansible-lint:latest
   script:
     - ansible-lint --show-relpath
+  only:
+    - merge_requests
+    - branches
 
 ansible-lint-2:
   stage: lint
@@ -19,8 +22,11 @@ ansible-lint-2:
     reports:
       junit: ansible-lint.xml
   script:
-    - ansible-lint -v --show-relpath -f pep8 --nocolor
+    - ansible-lint -v --show-relpath -f pep8 --force-color
       | ansible-lint-junit -o ansible-lint.xml
+  only:
+    - merge_requests
+    - branches
 
 ansible-lint-3:
   stage: lint
@@ -34,7 +40,9 @@ ansible-lint-3:
         - "${CI_PROJECT_DIR}/codeclimate-results.json"
     paths:
       - "${CI_PROJECT_DIR}/codeclimate-results.json"
-
+  only:
+    - merge_requests
+    - branches
 
 lint-playbooks:
   image: registry.gitlab.com/pipeline-components/ansible-lint:latest
@@ -61,7 +69,6 @@ lint-playbooks:
         - "${CI_PROJECT_DIR}/codeclimate-results.json"
     paths:
       - "${CI_PROJECT_DIR}/codeclimate-results.json"
-
 
 fix-playbooks:
   image: registry.gitlab.com/pipeline-components/ansible-lint:latest
