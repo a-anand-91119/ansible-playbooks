@@ -66,7 +66,7 @@
 
     - name: Display Flux bootstrap output
       ansible.builtin.debug:
-        msg: "{{ flux_bootstrap_check.stderr_lines }}"
+        msg: "{{ flux_bootstrap_check }}"
 
     - name: Check Flux installation
       ansible.builtin.command: flux check --pre
