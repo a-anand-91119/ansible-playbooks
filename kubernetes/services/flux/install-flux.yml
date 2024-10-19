@@ -29,7 +29,7 @@
 
     - name: Display Flux pre-check output
       ansible.builtin.debug:
-        msg: "{{ flux_precheck_output.stderr }}"
+        msg: "{{ flux_precheck_output.stderr_lines }}"
       failed_when: "'prerequisites checks passed' not in flux_precheck_output.stderr"
 
     - name: Add Flux bash completion to profile
@@ -66,7 +66,7 @@
 
     - name: Display Flux bootstrap output
       ansible.builtin.debug:
-        msg: "{{ flux_bootstrap_check.stderr }}"
+        msg: "{{ flux_bootstrap_check.stderr_lines }}"
 
     - name: Check Flux installation
       ansible.builtin.command: flux check --pre
