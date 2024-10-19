@@ -14,7 +14,7 @@ lint-playbooks:
       find . -name "*.yml" -o -name "*.yaml" | while read -r file; do
         if grep -qE '^( *hosts:| *tasks:)' "$file"; then
           echo "Linting $file..."
-          ansible-lint "$file" || exit 1
+          ansible-lint "$file" --force-color --profile=min --strict || exit 1
         else
           echo "Skipping non-ansible file: $file"
         fi
@@ -32,7 +32,7 @@ fix-playbooks:
       find . -name "*.yml" -o -name "*.yaml" | while read -r file; do
         if grep -qE '^( *hosts:| *tasks:)' "$file"; then
           echo "Fixing $file..."
-          ansible-lint --fix "$file" || exit 1
+          ansible-lint --fix "$file" --force-color || exit 1
         else
           echo "Skipping non-ansible file: $file"
         fi
