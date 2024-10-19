@@ -1,7 +1,7 @@
 ---
-- hosts: control_plane
+- name: Get token to join cluster from control plane node
+  hosts: control_plane
   become: true
-  name: Get token to join cluster from control plane node
   gather_facts: false
   tasks:
     - name: Get the token for joining the nodes with Kubernetes master.
@@ -22,8 +22,8 @@
         dest: /tmp/kubernetes_join_command
         flat: true
 
-- hosts: new_workers
-  name: Join new workers to kubernetes cluster
+- name: Join new workers to kubernetes cluster
+  hosts: new_workers
   become: true
   tasks:
     - name: Resetting kubeadm
@@ -43,8 +43,8 @@
     - ansible.builtin.debug:
         msg: "{{ joined_or_not.stdout }}"
 
-- hosts: control_plane
-  name: Add worker label to add newly joined worker nodes
+- name: Add worker label to add newly joined worker nodes
+  hosts: control_plane
   tasks:
     - name: Label the newly joined worker nodes as workers using kubectl
       ansible.builtin.command: kubectl label node {{ item }} node-role.kubernetes.io/worker=worker

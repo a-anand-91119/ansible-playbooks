@@ -1,6 +1,6 @@
 ---
-- hosts: all
-  name: Destroy the existing kubernetes cluster
+- name: Destroy the existing kubernetes cluster
+  hosts: all
   become: true
 
   tasks:

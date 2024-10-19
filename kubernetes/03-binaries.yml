@@ -1,6 +1,6 @@
 ---
-- hosts: all
-  name: Install all kubernetes tool binaries
+- name: Install all kubernetes tool binaries
+  hosts: all
   become: true
 
   tasks:

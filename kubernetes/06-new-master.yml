@@ -1,6 +1,6 @@
 ---
-- hosts: control_plane
-  name: Get certificates and token from existing control plane nodes
+- name: Get certificates and token from existing control plane nodes
+  hosts: control_plane
   become: true
   tasks:
     - name: Generate a certificate key for joining new control plane node

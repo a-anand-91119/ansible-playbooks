@@ -1,6 +1,6 @@
 ---
-- hosts: jump_server
-  name: Install ArgoCD in kubernetes cluster
+- name: Install ArgoCD in kubernetes cluster
+  hosts: jump_server
   tasks:
     - name: Create Argo CD namespace
       ansible.builtin.command: kubectl create namespace argocd

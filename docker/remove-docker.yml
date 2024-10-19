@@ -1,6 +1,6 @@
 ---
-- hosts: all
-  name: Remove docker and docker compose from machines
+- name: Remove docker and docker compose from machines
+  hosts: all
   become: true
 
   tasks:

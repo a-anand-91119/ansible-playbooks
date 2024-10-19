@@ -1,6 +1,6 @@
 ---
-- hosts: all
-  name: Ping all servers
+- name: Ping all servers
+  hosts: all
   gather_facts: false
   connection: local
 

@@ -58,8 +58,8 @@
         group: root
       when: inventory_hostname != groups['control_plane'][0]
 
-- hosts: control_plane
-  name: Initialize a new kubernetes cluster from control plane node
+- name: Initialize a new kubernetes cluster from control plane node
+  hosts: control_plane
   become: true
 
   tasks:
@@ -106,8 +106,8 @@
         remote_src: true
         owner: admin
 
-- hosts: control_plane
-  name: Setup Calico CNI
+- name: Setup Calico CNI
+  hosts: control_plane
   tasks:
     - name: Check if Kubernetes cluster is running
       ansible.builtin.command: kubectl cluster-info

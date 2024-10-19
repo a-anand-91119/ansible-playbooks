@@ -1,6 +1,6 @@
 ---
-- hosts: jump_server
-  name: Install and setup MetalLB LoadBalancer
+- name: Install and setup MetalLB LoadBalancer
+  hosts: jump_server
   tasks:
     - name: Disable Strict ARP for the cluster
       ansible.builtin.shell: "kubectl get configmap kube-proxy -n kube-system -o yaml | sed -e 's/strictARP: false/strictARP: true/' | kubectl apply -f - -n kube-system"
