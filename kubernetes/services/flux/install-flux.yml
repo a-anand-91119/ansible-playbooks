@@ -47,8 +47,8 @@
     - name: Bootstrap Flux with default and extra components
       ansible.builtin.shell: |
         flux bootstrap gitlab \
-          --private \
           --token-auth=false \
+          --visibility=private \
           --read-write-key=true \
           --path clusters/zeus-k8s \
           --cluster-domain cluster.local \
