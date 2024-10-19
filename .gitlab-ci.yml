@@ -66,5 +66,4 @@ fix-playbooks:
       - "${CI_PROJECT_DIR}/codeclimate-results.json"
   only:
     - merge_requests
-    - branches
   when: manual
