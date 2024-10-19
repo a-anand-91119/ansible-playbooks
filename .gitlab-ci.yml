@@ -52,7 +52,7 @@ lint-playbooks:
       find . -name "*.yml" -o -name "*.yaml" | while read -r file; do
         if grep -qE '^( *hosts:| *tasks:)' "$file"; then
           echo -e "Linting $file...\n"
-          ansible-lint -c .ansible-lint.yml "$file" --force-color --profile=production --strict || exit 1
+          ansible-lint "$file" --force-color --profile=production --strict || exit 1
           echo -e "\n"
         else
           echo "Skipping non-ansible file: $file \n"
@@ -78,7 +78,7 @@ fix-playbooks:
       find . -name "*.yml" -o -name "*.yaml" | while read -r file; do
         if grep -qE '^( *hosts:| *tasks:)' "$file"; then
           echo -e "Fixing $file...\n"
-          ansible-lint -c .ansible-lint.yml --fix "$file" --profile=production --force-color || exit 1
+          ansible-lint --fix "$file" --profile=production --force-color || exit 1
           echo -e "\n"
         else
           echo "Skipping non-ansible file: $file \n"
