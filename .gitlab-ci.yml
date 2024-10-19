@@ -36,8 +36,6 @@ ansible-lint-3:
       - "${CI_PROJECT_DIR}/codeclimate-results.json"
 
 
-
-
 lint-playbooks:
   image: registry.gitlab.com/pipeline-components/ansible-lint:latest
   stage: lint
