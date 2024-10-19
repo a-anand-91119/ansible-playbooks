@@ -1,19 +1,18 @@
 ---
 - name: Install Kubernetes Dashboard using Helm
   hosts: jump_server
-  become: yes
+  become: true
   tasks:
-
     - name: Add Kubernetes Dashboard Helm repository
-      command: helm repo add kubernetes-dashboard https://kubernetes.github.io/dashboard
+      ansible.builtin.command: helm repo add kubernetes-dashboard https://kubernetes.github.io/dashboard
       args:
         creates: ~/.cache/helm/repository/kubernetes-dashboard-index.yaml
 
     - name: Update Helm repositories
-      command: helm repo update
+      ansible.builtin.command: helm repo update
 
     - name: Install or upgrade Kubernetes Dashboard
-      shell: |
+      ansible.builtin.shell: |
         helm upgrade --install kubernetes-dashboard \
           kubernetes-dashboard/kubernetes-dashboard \
           --namespace kubernetes-dashboard \
@@ -21,7 +20,7 @@
       register: helm_install_output
 
     - name: Wait for Kubernetes Dashboard pods to be running
-      shell: |
+      ansible.builtin.shell: |
         kubectl get pods -n kubernetes-dashboard | grep -v 'Running\|Completed'
       register: pod_status
       until: pod_status.stdout == ""
@@ -29,10 +28,10 @@
       delay: 30
 
     - name: Verify Kubernetes Dashboard deployment
-      shell: kubectl get pods -n kubernetes-dashboard
+      ansible.builtin.command: kubectl get pods -n kubernetes-dashboard
       register: dashboard_pods
       changed_when: false
 
     - name: Output Kubernetes Dashboard pods status
-      debug:
+      ansible.builtin.debug:
         var: dashboard_pods.stdout

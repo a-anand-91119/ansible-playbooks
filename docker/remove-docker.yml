@@ -1,10 +1,11 @@
 ---
-- hosts: all
+- name: Remove docker and docker compose from machines
+  hosts: all
   become: true
 
   tasks:
     - name: Identify installed Docker packages
-      command: dpkg -l | grep -i docker
+      ansible.builtin.command: dpkg -l | grep -i docker
       ignore_errors: true
 
     - name: Remove Docker packages if installed
@@ -20,7 +21,7 @@
         - docker-compose-plugin
 
     - name: Remove Docker configuration and data directories
-      file:
+      ansible.builtin.file:
         path: "{{ item }}"
         state: absent
       loop:
@@ -32,11 +33,11 @@
         - ~/.docker
 
     - name: Remove Docker group if it exists
-      group:
+      ansible.builtin.group:
         name: docker
         state: absent
 
     - name: Clean up unused dependencies
       ansible.builtin.apt:
-        autoremove: yes
-        purge: yes
+        autoremove: true
+        purge: true

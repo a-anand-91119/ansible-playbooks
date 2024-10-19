@@ -1,122 +1,118 @@
 ---
-- hosts: control_plane
+- name: Get certificates and token from existing control plane nodes
+  hosts: control_plane
   become: true
   tasks:
-
     - name: Generate a certificate key for joining new control plane node
-      shell: kubeadm certs certificate-key
+      ansible.builtin.command: kubeadm certs certificate-key
       register: certificate_key
 
     - name: Upload certificates to the Kubernetes cluster using the certificate key
-      shell: kubeadm init phase upload-certs --upload-certs --certificate-key {{ certificate_key.stdout | trim }}
+      ansible.builtin.command: kubeadm init phase upload-certs --upload-certs --certificate-key {{ certificate_key.stdout | trim }}
       register: upload_certs_output
 
     - name: Get the token for joining the new master node with the Kubernetes control plane.
-      shell: kubeadm token create --print-join-command --certificate-key {{ certificate_key.stdout | trim }}
+      ansible.builtin.command: kubeadm token create --print-join-command --certificate-key {{ certificate_key.stdout | trim }}
       register: kubernetes_master_join_command
 
-    - debug:
+    - ansible.builtin.debug:
         msg: "{{ kubernetes_master_join_command.stdout_lines }}"
 
     - name: Copy the K8s Join command for new master node to file on master
       ansible.builtin.copy:
         content: "{{ kubernetes_master_join_command.stdout_lines[0] }}"
-        dest: "/tmp/kubernetes_master_join_command"
+        dest: /tmp/kubernetes_master_join_command
 
     - name: Copy join command from master to local Ansible server
-      fetch:
-        src: "/tmp/kubernetes_master_join_command"
-        dest: "/tmp/kubernetes_master_join_command"
-        flat: yes
+      ansible.builtin.fetch:
+        src: /tmp/kubernetes_master_join_command
+        dest: /tmp/kubernetes_master_join_command
+        flat: true
 
     - name: Fetch CA certificates and keys from control plane
-      fetch:
+      ansible.builtin.fetch:
         src: "{{ item.src }}"
-        dest: "/tmp/certificates/control_plane/{{ item.dest }}"
-        flat: yes
+        dest: /tmp/certificates/control_plane/{{ item.dest }}
+        flat: true
       loop:
-        - { src: '/etc/kubernetes/pki/ca.crt', dest: 'ca.crt' }
-        - { src: '/etc/kubernetes/pki/ca.key', dest: 'ca.key' }
-        - { src: '/etc/kubernetes/pki/sa.key', dest: 'sa.key' }
-        - { src: '/etc/kubernetes/pki/sa.pub', dest: 'sa.pub' }
-        - { src: '/etc/kubernetes/pki/front-proxy-ca.crt', dest: 'front-proxy-ca.crt' }
-        - { src: '/etc/kubernetes/pki/front-proxy-ca.key', dest: 'front-proxy-ca.key' }
-        - { src: '/etc/kubernetes/pki/etcd/ca.crt', dest: 'etcd-ca.crt' }
-        - { src: '/etc/kubernetes/pki/etcd/ca.key', dest: 'etcd-ca.key' }
+        - { src: /etc/kubernetes/pki/ca.crt, dest: ca.crt }
+        - { src: /etc/kubernetes/pki/ca.key, dest: ca.key }
+        - { src: /etc/kubernetes/pki/sa.key, dest: sa.key }
+        - { src: /etc/kubernetes/pki/sa.pub, dest: sa.pub }
+        - { src: /etc/kubernetes/pki/front-proxy-ca.crt, dest: front-proxy-ca.crt }
+        - { src: /etc/kubernetes/pki/front-proxy-ca.key, dest: front-proxy-ca.key }
+        - { src: /etc/kubernetes/pki/etcd/ca.crt, dest: etcd-ca.crt }
+        - { src: /etc/kubernetes/pki/etcd/ca.key, dest: etcd-ca.key }
 
     - name: Fetch kube-vip manifest from control plane
-      fetch:
+      ansible.builtin.fetch:
         src: "{{ item.src }}"
-        dest: "/tmp/kubernetes/manifests/{{ item.dest }}"
-        flat: yes
+        dest: /tmp/kubernetes/manifests/{{ item.dest }}
+        flat: true
       loop:
-        - { src: '/etc/kubernetes/manifests/kube-vip.yaml', dest: 'kube-vip.yaml' }
+        - { src: /etc/kubernetes/manifests/kube-vip.yaml, dest: kube-vip.yaml }
 
     - name: Fetch super admin conf for kube-vip
-      fetch:
+      ansible.builtin.fetch:
         src: "{{ item.src }}"
-        dest: "/tmp/kubernetes/{{ item.dest }}"
-        flat: yes
+        dest: /tmp/kubernetes/{{ item.dest }}
+        flat: true
       loop:
-        - { src: '/etc/kubernetes/super-admin.conf', dest: 'super-admin.conf' }
+        - { src: /etc/kubernetes/super-admin.conf, dest: super-admin.conf }
 
 
-- hosts: new_master
-  name: Reset kubeadm to cleanup node
+- name: Reset kubeadm to cleanup node
+  hosts: new_master
   become: true
   tasks:
-
     - name: Reset kubeadm on the new master node (if necessary)
-      shell: kubeadm reset -f
+      ansible.builtin.command: kubeadm reset -f
       ignore_errors: true
 
-
-- hosts: new_master
-  name: Copy manifests to proper location before init
+- name: Copy manifests to proper location before init
+  hosts: new_master
   become: true
   tasks:
-
     - name: Copy manifests to new master node
       ansible.builtin.copy:
-        src: "/tmp/kubernetes/manifests/"
-        dest: "/home/{{ ansible_user }}/"
-        mode: 0644
+        src: /tmp/kubernetes/manifests/
+        dest: /home/{{ ansible_user }}/
+        mode: "0644"
       with_items:
         - super-admin.conf
 
     - name: Copy super-admin conf to new master node
       ansible.builtin.copy:
-        src: "/tmp/kubernetes/"
-        dest: "/home/{{ ansible_user }}/"
-        mode: 0644
+        src: /tmp/kubernetes/
+        dest: /home/{{ ansible_user }}/
+        mode: "0644"
       with_items:
         - kube-vip.yaml
 
     - name: Ensure /etc/kubernetes/manifests directory exists
-      file:
+      ansible.builtin.file:
         path: /etc/kubernetes/manifests
         state: directory
-        mode: '0755'
+        mode: "0755"
         owner: root
         group: root
 
     - name: Move copied manifests to proper location in master node
       block:
         - name: Move kube vip manifest to /etc/kubernetes/manifests
-          command: mv /home/{{ ansible_user }}/kube-vip.yaml /etc/kubernetes/manifests/kube-vip.yaml
+          ansible.builtin.command: mv /home/{{ ansible_user }}/kube-vip.yaml /etc/kubernetes/manifests/kube-vip.yaml
         - name: Move super admin conf for kube vip manifest to /etc/kubernetes
-          command: mv /home/{{ ansible_user }}/super-admin.conf /etc/kubernetes/super-admin.conf
+          ansible.builtin.command: mv /home/{{ ansible_user }}/super-admin.conf /etc/kubernetes/super-admin.conf
 
-- hosts: new_master
-  name: Copy CA certs necessary to join cluster as a control plane
+- name: Copy CA certs necessary to join cluster as a control plane
+  hosts: new_master
   become: true
   tasks:
-
     - name: Copy CA certificates and keys to new master node
       ansible.builtin.copy:
-        src: "/tmp/certificates/control_plane/"
-        dest: "/home/{{ ansible_user }}/"
-        mode: 0644
+        src: /tmp/certificates/control_plane/
+        dest: /home/{{ ansible_user }}/
+        mode: "0644"
       with_items:
         - ca.crt
         - ca.key
@@ -128,46 +124,45 @@
         - etcd-ca.key
 
     - name: Ensure /etc/kubernetes/pki/etcd directory exists
-      file:
+      ansible.builtin.file:
         path: /etc/kubernetes/pki/etcd
         state: directory
-        mode: '0755'
+        mode: "0755"
         owner: root
         group: root
 
     - name: Move copied certificates to correct locations on new master node
       block:
         - name: Move CA certificate to /etc/kubernetes/pki
-          command: mv /home/{{ ansible_user }}/ca.crt /etc/kubernetes/pki/
+          ansible.builtin.command: mv /home/{{ ansible_user }}/ca.crt /etc/kubernetes/pki/
         - name: Move CA key to /etc/kubernetes/pki
-          command: mv /home/{{ ansible_user }}/ca.key /etc/kubernetes/pki/
+          ansible.builtin.command: mv /home/{{ ansible_user }}/ca.key /etc/kubernetes/pki/
         - name: Move SA key to /etc/kubernetes/pki
-          command: mv /home/{{ ansible_user }}/sa.key /etc/kubernetes/pki/
+          ansible.builtin.command: mv /home/{{ ansible_user }}/sa.key /etc/kubernetes/pki/
         - name: Move SA public key to /etc/kubernetes/pki
-          command: mv /home/{{ ansible_user }}/sa.pub /etc/kubernetes/pki/
+          ansible.builtin.command: mv /home/{{ ansible_user }}/sa.pub /etc/kubernetes/pki/
         - name: Move Front Proxy CA certificate to /etc/kubernetes/pki
-          command: mv /home/{{ ansible_user }}/front-proxy-ca.crt /etc/kubernetes/pki/
+          ansible.builtin.command: mv /home/{{ ansible_user }}/front-proxy-ca.crt /etc/kubernetes/pki/
         - name: Move Front Proxy CA key to /etc/kubernetes/pki
-          command: mv /home/{{ ansible_user }}/front-proxy-ca.key /etc/kubernetes/pki/
+          ansible.builtin.command: mv /home/{{ ansible_user }}/front-proxy-ca.key /etc/kubernetes/pki/
         - name: Move etcd CA certificate to /etc/kubernetes/pki/etcd
-          command: mv /home/{{ ansible_user }}/etcd-ca.crt /etc/kubernetes/pki/etcd/ca.crt
+          ansible.builtin.command: mv /home/{{ ansible_user }}/etcd-ca.crt /etc/kubernetes/pki/etcd/ca.crt
         - name: Move etcd CA key to /etc/kubernetes/pki/etcd
-          command: mv /home/{{ ansible_user }}/etcd-ca.key /etc/kubernetes/pki/etcd/ca.key
+          ansible.builtin.command: mv /home/{{ ansible_user }}/etcd-ca.key /etc/kubernetes/pki/etcd/ca.key
 
-- hosts: new_master
-  name: Join new node to the cluster as a control-plane
+- name: Join new node to the cluster as a control-plane
+  hosts: new_master
   become: true
   tasks:
-
     - name: Copy the K8s join command to the new master node
       ansible.builtin.copy:
         src: /tmp/kubernetes_master_join_command
         dest: /tmp/kubernetes_master_join_command
-        mode: 0777
+        mode: "0777"
 
     - name: Join the new master node to the control plane
-      command: sh /tmp/kubernetes_master_join_command
+      ansible.builtin.command: sh /tmp/kubernetes_master_join_command
       register: master_joined
 
-    - debug:
+    - ansible.builtin.debug:
         msg: "{{ master_joined.stdout }}"

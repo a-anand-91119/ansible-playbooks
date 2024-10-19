@@ -1,18 +1,17 @@
-- hosts: jump_server
-  name: "Install Longhorn"
-
+---
+- name: Install Longhorn
+  hosts: jump_server
   tasks:
-
     - name: Add the Longhorn Helm repository
-      shell: "helm repo add longhorn https://charts.longhorn.io"
+      ansible.builtin.command: helm repo add longhorn https://charts.longhorn.io
       args:
         creates: ~/.cache/helm/repository/longhorn-index.yaml
 
     - name: Update Helm repositories
-      shell: "helm repo update"
+      ansible.builtin.command: helm repo update
 
     - name: Install Longhorn in the longhorn-system namespace
-      shell: |
+      ansible.builtin.shell: |
         helm install longhorn longhorn/longhorn \
           --namespace longhorn-system \
           --create-namespace \
@@ -22,11 +21,11 @@
       ignore_errors: true # TODO: THis needs to be removed
 
     - name: Verify Longhorn installation by checking pods
-      shell: "kubectl -n longhorn-system get pod"
+      ansible.builtin.command: kubectl -n longhorn-system get pod
       register: longhorn_pods_output
 
     - name: Display running Longhorn pods
-      debug:
+      ansible.builtin.debug:
         var: longhorn_pods_output.stdout
 
 #    - name: Create basic auth file

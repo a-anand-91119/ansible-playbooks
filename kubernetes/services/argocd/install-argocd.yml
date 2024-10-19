@@ -1,13 +1,16 @@
 ---
-- hosts: control_plane
+- name: Install ArgoCD in kubernetes cluster
+  hosts: jump_server
   tasks:
     - name: Create Argo CD namespace
-      command: kubectl create namespace argocd
-      ignore_errors: yes
+      ansible.builtin.command: kubectl create namespace argocd
+      ignore_errors: true
 
     - name: Install Argo CD using the official manifests
-      command: kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/refs/tags/{{ lookup('ansible.builtin.env', 'ARGOCD_VERSION') }}/manifests/ha/install.yaml
+      ansible.builtin.command: |
+        kubectl apply -n argocd -f \
+          https://raw.githubusercontent.com/argoproj/argo-cd/refs/tags/{{ lookup('ansible.builtin.env', 'ARGOCD_VERSION')}}/manifests/ha/install.yaml
 
     - name: Patch the Argo CD server service to use LoadBalancer
-      command: |
+      ansible.builtin.command: |
         kubectl patch svc argocd-server -n argocd -p '{"spec": { "type": "LoadBalancer" } }'

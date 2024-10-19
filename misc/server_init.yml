@@ -5,16 +5,16 @@
   become_user: root
   vars:
     created_username: admin
-  
+
   tasks:
     - name: Setup passwordless sudo
       ansible.builtin.lineinfile:
         path: /etc/sudoers
         state: present
-        regexp: '^%sudo'
-        line: '%sudo ALL=(ALL) NOPASSWD: ALL'
-        validate: '/usr/sbin/visudo -cf %s'
-    
+        regexp: ^%sudo
+        line: "%sudo ALL=(ALL) NOPASSWD: ALL"
+        validate: /usr/sbin/visudo -cf %s
+
     - name: Create a new regular user with sudo privileges
       ansible.builtin.user:
         name: "{{ created_username }}"
@@ -34,8 +34,8 @@
       ansible.builtin.lineinfile:
         path: /etc/ssh/sshd_config
         state: present
-        regexp: '^#?PermitRootLogin'
-        line: 'PermitRootLogin prohibit-password'
+        regexp: ^#?PermitRootLogin
+        line: PermitRootLogin prohibit-password
 
     - name: Update apt and install required system packages
       ansible.builtin.apt:
@@ -50,7 +50,7 @@
           - zip
         state: latest
         update_cache: true
-    
+
     - name: UFW - Allow SSH connections
       community.general.ufw:
         rule: allow
@@ -60,12 +60,12 @@
       community.general.ufw:
         state: enabled
         default: deny
-    
+
     - name: Disable password-based SSH login
       ansible.builtin.lineinfile:
         path: /etc/ssh/sshd_config
-        regexp: '^#?PasswordAuthentication'
-        line: 'PasswordAuthentication no'
+        regexp: ^#?PasswordAuthentication
+        line: PasswordAuthentication no
         state: present
       notify: Restart SSH Service
 

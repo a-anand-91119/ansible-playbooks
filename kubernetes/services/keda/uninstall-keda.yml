@@ -3,28 +3,28 @@
   hosts: jump_server
   tasks:
     - name: Delete all ScaledObjects and ScaledJobs
-      shell: |
+      ansible.builtin.shell: |
         kubectl delete $(kubectl get scaledobjects.keda.sh,scaledjobs.keda.sh -A \
           -o jsonpath='{"-n "}{.items[*].metadata.namespace}{" "}{.items[*].kind}{"/"}{.items[*].metadata.name}{"\n"}')
-      ignore_errors: yes
+      ignore_errors: true
       register: keda_objects_deleted
 
     - name: Uninstall KEDA Helm chart
-      shell: helm uninstall keda -n keda
-      ignore_errors: yes
+      ansible.builtin.command: helm uninstall keda -n keda
+      ignore_errors: true
       register: keda_uninstall
 
     - name: Check if KEDA Helm uninstall was successful
-      fail:
-        msg: "Failed to uninstall KEDA Helm release."
+      ansible.builtin.fail:
+        msg: Failed to uninstall KEDA Helm release.
       when: keda_uninstall.rc != 0
 
     - name: Delete KEDA namespace using kubectl
-      shell: kubectl delete namespace keda
-      ignore_errors: yes
+      ansible.builtin.command: kubectl delete namespace keda
+      ignore_errors: true
       register: keda_namespace_deleted
 
     - name: Check if KEDA namespace deletion was successful
-      fail:
-        msg: "Failed to delete the KEDA namespace."
+      ansible.builtin.fail:
+        msg: Failed to delete the KEDA namespace.
       when: keda_namespace_deleted.rc != 0

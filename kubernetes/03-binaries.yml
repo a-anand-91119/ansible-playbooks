@@ -1,5 +1,6 @@
 ---
-- hosts: all
+- name: Install all kubernetes tool binaries
+  hosts: all
   become: true
 
   tasks:
@@ -12,36 +13,37 @@
           - gpg
           - gnupg-agent
         state: present
-        update_cache: yes
+        update_cache: true
 
     - name: Create keyrings directory if it doesn't exist
-      file:
+      ansible.builtin.file:
         path: /etc/apt/keyrings
         state: directory
-        mode: '0755'
+        mode: "0755"
 
     - name: Download Kubernetes GPG key
-      get_url:
+      ansible.builtin.get_url:
         url: https://pkgs.k8s.io/core:/stable:/{{ lookup('ansible.builtin.env', 'KUBERNETES_VERSION') }}/deb/Release.key
         dest: /etc/apt/keyrings/kubernetes-release-key.gpg
-        mode: '0644'
+        mode: "0644"
 
     - name: Convert GPG key to dearmored format
-      command: gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg /etc/apt/keyrings/kubernetes-release-key.gpg
+      ansible.builtin.command: gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg /etc/apt/keyrings/kubernetes-release-key.gpg
       args:
         creates: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
 
     - name: Add Kubernetes apt repository
       ansible.builtin.copy:
         dest: /etc/apt/sources.list.d/kubernetes.list
-        content: 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/{{ lookup("ansible.builtin.env", "KUBERNETES_VERSION") }}/deb/ /'
+        content: deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/{{ lookup("ansible.builtin.env", "KUBERNETES_VERSION")
+          }}/deb/ /
         owner: root
         group: root
-        mode: '0644'
+        mode: "0644"
 
     - name: Update apt package index
       ansible.builtin.apt:
-        update_cache: yes
+        update_cache: true
 
     - name: Install Kubernetes binaries
       ansible.builtin.apt:
@@ -54,7 +56,7 @@
           - kubectl
 
     - name: Pin the installed Kubernetes packages
-      command: apt-mark hold kubelet kubeadm kubectl
+      ansible.builtin.command: apt-mark hold kubelet kubeadm kubectl
 
     - name: Configure node ip
       ansible.builtin.lineinfile:
@@ -64,5 +66,5 @@
     - name: Enable and start kubelet service
       ansible.builtin.service:
         name: kubelet
-        daemon_reload: yes
+        daemon_reload: true
         state: restarted

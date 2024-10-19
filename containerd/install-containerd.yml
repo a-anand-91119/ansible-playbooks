@@ -1,6 +1,6 @@
 ---
-- hosts: all
-  name: Install containerd runtime
+- name: Install containerd runtime
+  hosts: all
   become: true
 
   tasks:
@@ -10,42 +10,42 @@
           - ca-certificates
           - curl
         state: present
-        update_cache: yes
+        update_cache: true
 
     - name: Configure module for containerd.
-      blockinfile:
+      ansible.builtin.blockinfile:
         path: /etc/modules-load.d/containerd.conf
         block: |
           overlay
           br_netfilter
-        create: yes
+        create: true
 
     - name: Load the overlay module
-      command: modprobe overlay
+      ansible.builtin.command: modprobe overlay
 
     - name: Load the br_netfilter module
-      command: modprobe br_netfilter
+      ansible.builtin.command: modprobe br_netfilter
 
     - name: Verify that the overlay module is loaded
-      shell: lsmod | grep overlay
+      ansible.builtin.shell: lsmod | grep overlay
       register: overlay_module
       changed_when: false
 
     - name: Verify that the br_netfilter module is loaded
-      shell: lsmod | grep br_netfilter
+      ansible.builtin.shell: lsmod | grep br_netfilter
       register: br_netfilter_module
       changed_when: false
 
     - name: Print overlay module load status
-      debug:
+      ansible.builtin.debug:
         msg: "Overlay module loaded: {{ overlay_module.stdout }}"
 
     - name: Print br_netfilter module load status
-      debug:
+      ansible.builtin.debug:
         msg: "br_netfilter module loaded: {{ br_netfilter_module.stdout }}"
 
     - name: Add Docker’s official GPG key
-      apt_key:
+      ansible.builtin.apt_key:
         url: https://download.docker.com/linux/ubuntu/gpg
         state: present
 
@@ -53,22 +53,23 @@
       ansible.builtin.file:
         path: /etc/apt/keyrings
         state: directory
-        mode: '0755'
+        mode: "0755"
 
     - name: Add Docker’s official GPG key
       ansible.builtin.get_url:
         url: https://download.docker.com/linux/ubuntu/gpg
         dest: /etc/apt/keyrings/docker.asc
-        mode: '0644'
+        mode: "0644"
 
     - name: Add Docker Repository
-      apt_repository:
-        repo: "deb [arch={{ ansible_architecture }} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+      ansible.builtin.apt_repository:
+        repo: deb [arch={{ ansible_architecture }} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release
+          }} stable
         filename: docker
         state: present
-        update_cache: yes
+        update_cache: true
 
-    - name: "Update cache & Full system update"
+    - name: Update cache & Full system update
       ansible.builtin.apt:
         update_cache: true
         upgrade: dist
@@ -82,12 +83,12 @@
         state: present
 
     - name: Configure containerd.
-      file:
+      ansible.builtin.file:
         path: /etc/containerd
         state: directory
 
     - name: Generate the default containerd configuration
-      shell: |
+      ansible.builtin.shell: |
         containerd config default | tee /etc/containerd/config.toml
       args:
         creates: /etc/containerd/config.toml
@@ -95,19 +96,19 @@
     - name: Update SystemdCgroup to true in containerd config
       ansible.builtin.lineinfile:
         path: /etc/containerd/config.toml
-        regexp: '^(\s*SystemdCgroup\s*=\s*)false'
-        line: '            SystemdCgroup = true'
-        backup: yes
+        regexp: ^(\s*SystemdCgroup\s*=\s*)false
+        line: "            SystemdCgroup = true"
+        backup: true
 
     - name: Enable and start containerd service
       ansible.builtin.systemd:
         name: containerd
-        enabled: yes
+        enabled: true
         state: restarted
-        daemon-reload: yes
+        daemon-reload: true
 
     - name: Verify containerd service is running
-      systemd:
+      ansible.builtin.systemd:
         name: containerd
         state: started
-        enabled: yes
+        enabled: true

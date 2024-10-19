@@ -21,7 +21,7 @@
       ansible.builtin.template:
         src: nfs-storage-class.yml.j2
         dest: /tmp/k8s-manifests/nfs-storage-class.yml
-        mode: '0644'
+        mode: "0644"
       vars:
         nfs_server: "{{ lookup('ansible.builtin.env', 'NFS_SERVER_IP') }}"
         nfs_ephemeral_share: "{{ lookup('ansible.builtin.env', 'NFS_EPHEMERAL_SHARE_PATH') }}"

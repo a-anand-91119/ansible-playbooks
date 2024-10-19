@@ -1,7 +1,7 @@
 ---
 - name: Prepare server for backuppc
   hosts: jump_server
-  become: yes
+  become: true
   vars:
     created_username: backuppc
 
@@ -25,14 +25,14 @@
       ansible.builtin.lineinfile:
         path: /etc/ssh/sshd_config
         state: present
-        regexp: '^#?PermitRootLogin'
-        line: 'PermitRootLogin prohibit-password'
+        regexp: ^#?PermitRootLogin
+        line: PermitRootLogin prohibit-password
 
     - name: Disable password-based SSH login
       ansible.builtin.lineinfile:
         path: /etc/ssh/sshd_config
-        regexp: '^#?PasswordAuthentication'
-        line: 'PasswordAuthentication no'
+        regexp: ^#?PasswordAuthentication
+        line: PasswordAuthentication no
         state: present
       notify: Restart SSH Service
 

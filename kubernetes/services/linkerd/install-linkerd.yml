@@ -1,9 +1,9 @@
-- hosts: jump_server
-  name: "Install Linkerd CLI and Setup on Kubernetes Cluster"
-
+---
+- name: Install Linkerd CLI and Setup on Kubernetes Cluster
+  hosts: jump_server
   tasks:
     - name: Download and install Linkerd CLI
-      shell: |
+      ansible.builtin.shell: |
         curl --proto '=https' --tlsv1.2 -sSfL https://run.linkerd.io/install-edge | sh
       args:
         creates: "{{ ansible_env.HOME }}/.linkerd2/bin/linkerd"
@@ -13,30 +13,30 @@
     - name: Add Linkerd CLI to PATH permanently
       ansible.builtin.lineinfile:
         path: ~/.bashrc
-        regexp: '^export PATH=.*linkerd2/bin'
-        line: 'export PATH=$HOME/.linkerd2/bin:$PATH'
+        regexp: ^export PATH=.*linkerd2/bin
+        line: export PATH=$HOME/.linkerd2/bin:$PATH
         state: present
 
     - name: Add Linkerd CLI to PATH for the current session
-      shell: "export PATH=$HOME/.linkerd2/bin:$PATH"
+      ansible.builtin.shell: export PATH=$HOME/.linkerd2/bin:$PATH
 
     - name: Verify Linkerd CLI installation
-      shell: $HOME/.linkerd2/bin/linkerd version
+      ansible.builtin.shell: $HOME/.linkerd2/bin/linkerd version
       register: linkerd_version_output
       failed_when: "'Server version: unavailable' not in linkerd_version_output.stdout"
 
     - name: Check if Linkerd prerequisites are met in the Kubernetes cluster
-      shell: $HOME/.linkerd2/bin/linkerd check --pre
+      ansible.builtin.shell: $HOME/.linkerd2/bin/linkerd check --pre
       register: linkerd_check_output
       failed_when: "'Status check results are' not in linkerd_check_output.stdout"
 
     - name: Install Linkerd CRDs
-      shell: $HOME/.linkerd2/bin/linkerd install --crds | kubectl apply -f -
+      ansible.builtin.shell: $HOME/.linkerd2/bin/linkerd install --crds | kubectl apply -f -
 
     - name: Install Linkerd control plane
-      shell: $HOME/.linkerd2/bin/linkerd install | kubectl apply -f -
+      ansible.builtin.shell: $HOME/.linkerd2/bin/linkerd install | kubectl apply -f -
 
     - name: Wait for Linkerd installation to be ready
-      shell: $HOME/.linkerd2/bin/linkerd check
+      ansible.builtin.shell: $HOME/.linkerd2/bin/linkerd check
       register: linkerd_install_check_output
       failed_when: "'Status check results are' not in linkerd_install_check_output.stdout"
