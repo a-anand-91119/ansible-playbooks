@@ -54,3 +54,30 @@
       shell: helm version
       register: helm_version_output
       changed_when: false
+
+- hosts: jump_server
+  name: Install and setup Kubeseal
+  vars:
+    KUBESEAL_VERSION: lookup('anisble.builtin.env', 'KUBESEAL_VERSION')
+  tasks:
+    - name: Download kubeseal
+      ansible.builtin.get_url:
+        url: "https://github.com/bitnami-labs/sealed-secrets/releases/download/v{{ KUBESEAL_VERSION }}/kubeseal-{{ KUBESEAL_VERSION }}-linux-amd64.tar.gz"
+        dest: "/tmp/kubeseal-{{ KUBESEAL_VERSION }}-linux-amd64.tar.gz"
+
+    - name: Extract kubeseal binary
+      ansible.builtin.unarchive:
+        src: "/tmp/kubeseal-{{ KUBESEAL_VERSION }}-linux-amd64.tar.gz"
+        dest: "/tmp"
+        remote_src: yes
+        extra_opts: --strip-components=1
+
+    - name: Install kubeseal binary
+      ansible.builtin.command:
+        cmd: "install -m 755 /tmp/kubeseal /usr/local/bin/kubeseal"
+      become: yes
+
+    - name: Clean up temporary files
+      ansible.builtin.file:
+        path: "/tmp/kubeseal-{{ KUBESEAL_VERSION }}-linux-amd64.tar.gz"
+        state: absent
