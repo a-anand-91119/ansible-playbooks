@@ -68,11 +68,11 @@
 
     - name: Extract kubeseal binary only
       ansible.builtin.command:
-        cmd: "tar -xvzf /tmp/kubeseal-{{ KUBESEAL_VERSION }}-linux-amd64.tar.gz /tmp/kubeseal"
+        cmd: "tar -xvzf /tmp/kubeseal-{{ KUBESEAL_VERSION }}-linux-amd64.tar.gz kubeseal"
 
     - name: Install kubeseal binary
       ansible.builtin.command:
-        cmd: "install -m 755 /tmp/kubeseal /usr/local/bin/kubeseal"
+        cmd: "install -m 755 kubeseal /usr/local/bin/kubeseal"
       become: yes
 
     - name: Clean up temporary files
