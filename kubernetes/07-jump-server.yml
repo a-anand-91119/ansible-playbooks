@@ -58,7 +58,7 @@
 - hosts: jump_server
   name: Install and setup Kubeseal
   vars:
-    KUBESEAL_VERSION: "{{ lookup('anisble.builtin.env', 'KUBESEAL_VERSION') }}"
+    KUBESEAL_VERSION: "{{ lookup('ansible.builtin.env', 'KUBESEAL_VERSION') }}"
   tasks:
     - name: Download kubeseal
       ansible.builtin.get_url:
