@@ -57,8 +57,10 @@
 
 - hosts: jump_server
   name: Install and setup Kubeseal
+  become: yes
   vars:
     KUBESEAL_VERSION: "{{ lookup('ansible.builtin.env', 'KUBESEAL_VERSION') }}"
+
   tasks:
     - name: Download kubeseal
       ansible.builtin.get_url:
@@ -72,8 +74,8 @@
           chdir: /tmp
 
     - name: Install kubeseal binary
-      ansible.builtin.command: "install -m 755 /tmp/kubeseal /usr/local/bin/kubeseal"
-      become: yes
+      ansible.builtin.command:
+        cmd: "install -m 755 /tmp/kubeseal /usr/local/bin/kubeseal"
 
     - name: Clean up temporary files
       ansible.builtin.file:
