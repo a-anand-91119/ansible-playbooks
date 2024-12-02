@@ -26,7 +26,7 @@
 
     - name: Set authorized key for remote user
       ansible.posix.authorized_key:
-        ansible.builtin.user: "{{ created_username }}"
+        user: "{{ created_username }}"
         state: present
         key: "{{ lookup('file', '/home/admin/.ssh/id_rsa.pub') }}"
 

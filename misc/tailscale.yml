@@ -1,0 +1,23 @@
+---
+- name: Install and setup tailscale
+  hosts: tailscale_servers
+  become: true
+  roles:
+    - role: artis3n.tailscale
+      vars:
+        tailscale_authkey: "{{ lookup('ansible.builtin.env', 'TAILSCALE_AUTH_KEY') }}"
+        tailscale_state: started
+
+  tasks:
+    - name: Display the Tailscale IPv4 address
+      ansible.builtin.debug:
+        msg: "Tailscale IPv4 is: {{ tailscale_node_ipv4 }}"
+
+    - name: Write Tailscale IPv4 to a file on the jump server
+      become: true
+      become_user: admin
+      ansible.builtin.copy:
+        content: "{{ tailscale_node_ipv4 }}"
+        dest: ~/tailscale_ipv4.txt
+        mode: '0600'
+      when: tailscale_node_ipv4 is defined
