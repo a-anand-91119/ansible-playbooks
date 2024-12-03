@@ -2,7 +2,6 @@
 - name: Install and setup tailscale
   hosts: tailscale_servers
   become: true
-  become_user: admin
   roles:
     - role: artis3n.tailscale
       vars:
