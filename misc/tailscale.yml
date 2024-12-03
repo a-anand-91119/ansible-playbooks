@@ -5,7 +5,6 @@
   become_user: admin
   roles:
     - role: artis3n.tailscale
-      become: true
       vars:
         verbose: true
         tailscale_authkey: "{{ lookup('ansible.builtin.env', 'TAILSCALE_AUTH_KEY') }}"
