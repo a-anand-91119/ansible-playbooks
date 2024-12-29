@@ -1,6 +1,6 @@
 ---
-- hosts: control_plane
-  name: Get kubernetes config from control plane node
+- name: Get kubernetes config from control plane node
+  hosts: control_plane
   tasks:
     - name: Copy kube config file from control_plane to local Ansible server
       fetch:
@@ -8,8 +8,21 @@
         dest: /tmp/kube_config
         flat: true
 
-- hosts: jump_server
-  name: Setup kube config in jump server
+- name: Install packages for network debugging
+  hosts: jump_server
+  tasks:
+    - name: Update apt and install required system packages
+      ansible.builtin.apt:
+        pkg:
+          - traceroute
+          - nmap
+          - fping
+          - arp-scan
+        state: latest
+        update_cache: true
+
+- name: Setup kube config in jump server
+  hosts: jump_server
   tasks:
     - name: Allow Kubernetes control plane ports in UFW
       become: true
