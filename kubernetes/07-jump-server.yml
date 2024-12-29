@@ -18,6 +18,7 @@
           - nmap
           - fping
           - arp-scan
+          - net-tools
         state: latest
         update_cache: true
 
