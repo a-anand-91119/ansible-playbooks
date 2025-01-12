@@ -48,7 +48,7 @@
           - ufw
           - unzip
           - zip
-        state: latest
+        state: present
         update_cache: true
 
     - name: UFW - Allow SSH connections
