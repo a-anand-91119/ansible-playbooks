@@ -19,4 +19,5 @@
       ansible.builtin.copy:
         content: "{{ tailscale_node_ipv4 }}"
         dest: ~/tailscale_ipv4.txt
+        mode: "0644"
       when: tailscale_node_ipv4 is defined

@@ -4,7 +4,7 @@
   become: true
   tasks:
     - name: Create symbolic link to disable runc AppArmor profile
-      file:
+      ansible.builtin.file:
         src: /etc/apparmor.d/runc
         dest: /etc/apparmor.d/disable/runc
         state: link
@@ -53,12 +53,13 @@
         update_cache: true
 
     - name: Configure module for containerd.
-      blockinfile:
+      ansible.builtin.blockinfile:
         path: /etc/modules-load.d/containerd.conf
         block: |
           overlay
           br_netfilter
         create: true
+        mode: "0644"
 
     - name: Load the overlay module
       command: modprobe overlay
@@ -67,7 +68,7 @@
       command: modprobe br_netfilter
 
     - name: Verify that the overlay module is loaded
-      shell: lsmod | grep overlay
+      ansible.builtin.shell: lsmod | grep overlay
       register: overlay_module
       changed_when: false
 
@@ -126,12 +127,14 @@
       file:
         path: /etc/containerd
         state: directory
+        mode: "0755"
 
     - name: Generate the default containerd configuration
       ansible.builtin.shell: |
         containerd config default | tee /etc/containerd/config.toml
       args:
         creates: /etc/containerd/config.toml
+        mode: "0644"
 
     - name: Update SystemdCgroup to true in containerd config
       ansible.builtin.lineinfile:
