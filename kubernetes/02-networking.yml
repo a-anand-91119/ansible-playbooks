@@ -1,6 +1,6 @@
 ---
-- hosts: all
-  name: Perform all network related prerequisites for kubernetes
+- name: Perform all network related prerequisites for kubernetes
+  hosts: all
   become: true
 
   vars:
@@ -156,7 +156,7 @@
       register: sysctl_check
 
     - name: Display verification results
-      debug:
+      ansible.builtin.debug:
         var: sysctl_check.stdout_lines
 
     - name: Download CNI plugins
@@ -164,6 +164,7 @@
         url: https://github.com/containernetworking/plugins/releases/download/{{ lookup('ansible.builtin.env', 'CNI_PLUGIN_VERSION') }}/cni-plugins-linux-amd64-{{
           lookup('ansible.builtin.env', 'CNI_PLUGIN_VERSION') }}.tgz
         dest: /tmp/cni-plugins-linux-amd64-{{ lookup('ansible.builtin.env', 'CNI_PLUGIN_VERSION') }}.tgz
+        mode: "0644"
 
     - name: Create CNI bin directory
       ansible.builtin.file:
