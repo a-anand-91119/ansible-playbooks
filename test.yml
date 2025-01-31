@@ -4,7 +4,7 @@
   become: true
 
   vars:
-    DISABLE_CLOUD_INIT: {{ lookup('ansible.builtin.env', 'DISABLE_CLOUD_INIT') }}
+    DISABLE_CLOUD_INIT: "{{ lookup('ansible.builtin.env', 'DISABLE_CLOUD_INIT') }}""
     
   tasks:
     - name: Display if DISABLE_CLOUD_INIT is false
