@@ -40,3 +40,19 @@
       ansible.builtin.shell: $HOME/.linkerd2/bin/linkerd check
       register: linkerd_install_check_output
       failed_when: "'Status check results are' not in linkerd_install_check_output.stdout"
+
+    - name: Install viz extension
+      ansible.builtin.shell: $HOME/.linkerd2/bin/linkerd viz install | kubectl apply -f -
+
+    - name: Wait for Linkerd Viz installation to be ready
+      ansible.builtin.shell: $HOME/.linkerd2/bin/linkerd check
+      register: linkerd_viz_install_check_output
+      failed_when: "'Status check results are' not in linkerd_install_check_output.stdout"
+
+    - name: Install jaeger extension
+      ansible.builtin.shell: $HOME/.linkerd2/bin/linkerd jaeger install --set webhook.collectorTraceProtocol=opentelemetry | kubectl apply -f
+
+    - name: Wait for Jaeger installation to be ready
+      ansible.builtin.shell: $HOME/.linkerd2/bin/linkerd jaeger check
+      register: linkerd_jaeger_install_check_output
+      failed_when: "'Status check results are' not in linkerd_install_check_output.stdout"
