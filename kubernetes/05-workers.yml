@@ -48,4 +48,4 @@
   tasks:
     - name: Label the newly joined worker nodes as workers using kubectl
       ansible.builtin.command: kubectl label node {{ item }} node-role.kubernetes.io/worker=worker
-      loop: "{{ groups['new_workers'] }}"
+      loop: "{{ groups['workers'] }}"
