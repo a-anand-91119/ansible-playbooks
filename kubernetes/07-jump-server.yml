@@ -10,6 +10,7 @@
 
 - name: Install packages for network debugging
   hosts: jump_server
+  become: true
   tasks:
     - name: Update apt and install required system packages
       ansible.builtin.apt:
