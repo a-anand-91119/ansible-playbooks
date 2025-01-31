@@ -1,6 +1,6 @@
 ---
-- hosts: all
-  name: Disable runc app armour profile
+- name: Disable runc app armour profile
+  hosts: all
   become: true
   tasks:
     - name: Create symbolic link to disable runc AppArmor profile
@@ -14,13 +14,12 @@
       command: apparmor_parser -R /etc/apparmor.d/runc
       ignore_errors: true
 
-- hosts: all
-  name: Disable swap on machines permanently
+- name: Disable swap on machines permanently
+  hosts: all
   become: true
-
   tasks:
     - name: Remove swapfile from /etc/fstab
-      mount:
+      ansible.posix.mount:
         name: "{{ item }}"
         fstype: swap
         state: absent
@@ -33,16 +32,15 @@
       when: ansible_swaptotal_mb > 0
 
     - name: Disable swap permanently, persist reboots
-      replace:
+      ansible.builtin.replace:
         path: /etc/fstab
         regexp: ^(\s*)([^#\n]+\s+)(\w+\s+)swap(\s+.*)$
         replace: "#\\1\\2\\3swap\\4"
         backup: true
 
-- hosts: all
-  name: Install containerd runtime
+- name: Install containerd runtime
+  hosts: all
   become: true
-
   tasks:
     - name: Ensure required packages are installed
       ansible.builtin.apt:
@@ -74,20 +72,20 @@
       changed_when: false
 
     - name: Verify that the br_netfilter module is loaded
-      shell: lsmod | grep br_netfilter
+      ansible.builtin.shell: lsmod | grep br_netfilter
       register: br_netfilter_module
       changed_when: false
 
     - name: Print overlay module load status
-      debug:
+      ansible.builtin.debug:
         msg: "Overlay module loaded: {{ overlay_module.stdout }}"
 
     - name: Print br_netfilter module load status
-      debug:
+      ansible.builtin.debug:
         msg: "br_netfilter module loaded: {{ br_netfilter_module.stdout }}"
 
     - name: Add Docker’s official GPG key
-      apt_key:
+      ansible.builtin.apt_key:
         url: https://download.docker.com/linux/ubuntu/gpg
         state: present
 
@@ -104,7 +102,7 @@
         mode: "0644"
 
     - name: Add Docker Repository
-      apt_repository:
+      ansible.builtin.apt_repository:
         repo: deb [arch={{ ansible_architecture }} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release
           }} stable
         filename: docker
@@ -130,7 +128,7 @@
         state: directory
 
     - name: Generate the default containerd configuration
-      shell: |
+      ansible.builtin.shell: |
         containerd config default | tee /etc/containerd/config.toml
       args:
         creates: /etc/containerd/config.toml
@@ -150,13 +148,13 @@
         daemon-reload: true
 
     - name: Verify containerd service is running
-      systemd:
+      ansible.builtin.systemd:
         name: containerd
         state: started
         enabled: true
 
-- hosts: all
-  name: Setup proper values for /etc/hosts
+- name: Setup proper values for /etc/hosts
+  hosts: all
   vars:
     default_hosts_content: |
       127.0.0.1 localhost
@@ -180,7 +178,7 @@
         mode: "0644"
 
     - name: Build the hosts file content
-      set_fact:
+      ansible.builtin.set_fact:
         hosts_file_content: |
           {{ default_hosts_content }}
           {% for host in groups['control_plane'] %}
