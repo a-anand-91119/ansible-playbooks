@@ -3,7 +3,7 @@
   hosts: control_plane
   tasks:
     - name: Copy kube config file from control_plane to local Ansible server
-      fetch:
+      ansible.builtin.fetch:
         src: /home/admin/.kube/config
         dest: /tmp/kube_config
         flat: true
@@ -19,7 +19,7 @@
           - fping
           - arp-scan
           - net-tools
-        state: latest
+        state: present
         update_cache: true
 
 - name: Setup kube config in jump server
@@ -38,7 +38,7 @@
     - name: Create .kube directory
       become: true
       become_user: admin
-      file:
+      ansible.builtin.file:
         path: $HOME/.kube
         state: directory
         mode: "0755"
@@ -49,12 +49,12 @@
         dest: $HOME/.kube/config
         mode: "0600"
 
-- hosts: jump_server
-  name: Install Helm
+- name: Install Helm
+  hosts: jump_server
 
   tasks:
     - name: Download the Helm install script
-      get_url:
+      ansible.builtin.get_url:
         url: https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
         dest: /tmp/get_helm.sh
         mode: "0700"
@@ -69,8 +69,9 @@
       register: helm_version_output
       changed_when: false
 
-- hosts: jump_server
-  name: Install and setup Kubeseal
+- name: Install and setup Kubeseal
+  hosts: jump_server
+
   vars:
     KUBESEAL_VERSION: "{{ lookup('ansible.builtin.env', 'KUBESEAL_VERSION') }}"
 
