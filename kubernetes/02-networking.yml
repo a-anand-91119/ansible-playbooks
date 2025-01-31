@@ -3,6 +3,9 @@
   name: Perform all network related prerequisites for kubernetes
   become: true
 
+  vars:
+    DISABLE_CLOUD_INIT: "{{ lookup('ansible.builtin.env', 'DISABLE_CLOUD_INIT') }}"
+
   tasks:
     - name: Allow Kubernetes control plane ports in UFW
       community.general.ufw:
@@ -86,6 +89,7 @@
         mode: "0644"
 
     - name: Write content to disable cloud-init network configuration
+      when: DISABLE_CLOUD_INIT == "true"
       ansible.builtin.copy:
         dest: /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg
         content: |
@@ -95,6 +99,7 @@
         mode: "0644"
 
     - name: Create netplan config for static IP
+      when: DISABLE_CLOUD_INIT == "true"
       ansible.builtin.copy:
         dest: /etc/netplan/00_installer_config.yaml
         content: |
@@ -115,6 +120,7 @@
         mode: "0600"
 
     - name: Apply netplan configuration
+      when: DISABLE_CLOUD_INIT == "true"
       ansible.builtin.command: netplan apply
 
     - name: Create a empty file for kubernetes sysctl params.
