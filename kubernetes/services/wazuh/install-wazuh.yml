@@ -1,7 +1,7 @@
 ---
 - name: Install Wazuh on Kubernetes (local-env)
   hosts: jump_server
-  become: yes
+  become: true
   tasks:
 
     - name: Clone the Wazuh Kubernetes repository

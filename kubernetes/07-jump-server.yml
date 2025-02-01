@@ -87,7 +87,7 @@
         cmd: "tar -xvzf /tmp/kubeseal-{{ KUBESEAL_VERSION }}-linux-amd64.tar.gz /tmp/kubeseal"
 
     - name: Install kubeseal binary
-      become: yes
+      become: true
       ansible.builtin.command:
         cmd: "install -m 755 /tmp/kubeseal /usr/local/bin/kubeseal"
 

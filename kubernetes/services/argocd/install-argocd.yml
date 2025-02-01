@@ -1,6 +1,9 @@
 ---
 - name: Install ArgoCD in kubernetes cluster
   hosts: jump_server
+  vars:
+    argocd_cli_version: "{{ lookup('ansible.builtin.env', 'ARGOCD_VERSION') }}"
+
   tasks:
     - name: Create Argo CD namespace
       ansible.builtin.command: kubectl create namespace argocd
@@ -9,8 +12,24 @@
     - name: Install Argo CD using the official manifests
       ansible.builtin.command: |
         kubectl apply -n argocd -f \
-          https://raw.githubusercontent.com/argoproj/argo-cd/refs/tags/{{ lookup('ansible.builtin.env', 'ARGOCD_VERSION')}}/manifests/ha/install.yaml
+          https://raw.githubusercontent.com/argoproj/argo-cd/refs/tags/{{ argocd_cli_version }}/manifests/ha/install.yaml
 
     - name: Patch the Argo CD server service to use LoadBalancer
       ansible.builtin.command: |
         kubectl patch svc argocd-server -n argocd -p '{"spec": { "type": "LoadBalancer" } }'
+
+    - name: Download ArgoCD CLI
+      ansible.builtin.get_url:
+        url: "https://github.com/argoproj/argo-cd/releases/download/{{ argocd_cli_version }}/argocd-linux-amd64"
+        dest: "/tmp/argocd-linux-amd64"
+        mode: "0644"
+
+    - name: Install ArgoCD CLI binary
+      become: true
+      ansible.builtin.command:
+        cmd: "install -m 555 /tmp/argocd-linux-amd64 /usr/local/bin/argocd"
+
+    - name: Clean up temporary files
+      ansible.builtin.file:
+        path: "/tmp/argocd-linux-amd64"
+        state: absent
