@@ -192,6 +192,9 @@
           {% for host in groups['new_master'] %}
           {{ hostvars[host].ansible_host }} {{ host }}
           {% endfor %}
+          {% for host in groups['new_workers'] %}
+          {{ hostvars[host].ansible_host }} {{ host }}
+          {% endfor %}
           {% for host in groups['jump_server'] %}
           {{ hostvars[host].ansible_host }} {{ host }}
           {% endfor %}
