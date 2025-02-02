@@ -134,7 +134,6 @@
         containerd config default | tee /etc/containerd/config.toml
       args:
         creates: /etc/containerd/config.toml
-        mode: "0644"
 
     - name: Update SystemdCgroup to true in containerd config
       ansible.builtin.lineinfile:
