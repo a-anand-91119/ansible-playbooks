@@ -1,6 +1,6 @@
 ---
 - name: Perform all network related prerequisites for kubernetes
-  hosts: all
+  hosts: all:!jump_server
   become: true
 
   vars:

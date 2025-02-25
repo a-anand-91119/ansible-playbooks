@@ -1,0 +1,39 @@
+---
+- name: Configure multipath and restart service
+  hosts: all:!jump_server
+  become: true
+  tasks:
+    - name: Ensure /etc/multipath.conf exists
+      ansible.builtin.copy:
+        dest: /etc/multipath.conf
+        content: |
+          blacklist {
+              devnode "^sd[a-z0-9]+"
+          }
+        mode: '0644'
+      when: not ansible.builtin.stat(path='/etc/multipath.conf').stat.exists
+
+    - name: Append blacklist entry if not present
+      ansible.builtin.blockinfile:
+        path: /etc/multipath.conf
+        block: |
+          blacklist {
+              devnode "^sd[a-z0-9]+"
+          }
+        marker: "# {mark} ANSIBLE MANAGED BLOCK"
+      when: ansible.builtin.stat(path='/etc/multipath.conf').stat.exists
+
+    - name: Restart multipathd service
+      ansible.builtin.systemd:
+        name: multipathd.service
+        state: restarted
+
+    - name: Verify multipath configuration
+      ansible.builtin.command: multipath -t
+      register: multipath_output
+      changed_when: false
+
+    - name: Ensure configuration is applied
+      ansible.builtin.fail:
+        msg: "Multipath configuration missing expected devnode entry."
+      when: '"devnode \"^sd[a-z0-9]+\"" not in multipath_output.stdout'

@@ -1,6 +1,6 @@
 ---
 - name: Disable runc app armour profile
-  hosts: all
+  hosts: all:!jump_server
   become: true
   tasks:
     - name: Create symbolic link to disable runc AppArmor profile
@@ -15,7 +15,7 @@
       ignore_errors: true
 
 - name: Disable swap on machines permanently
-  hosts: all
+  hosts: all:!jump_server
   become: true
   tasks:
     - name: Remove swapfile from /etc/fstab
@@ -39,7 +39,7 @@
         backup: true
 
 - name: Install containerd runtime
-  hosts: all
+  hosts: all:!jump_server
   become: true
   tasks:
     - name: Ensure required packages are installed
@@ -156,7 +156,7 @@
         enabled: true
 
 - name: Setup proper values for /etc/hosts
-  hosts: all
+  hosts: all:!jump_server
   vars:
     default_hosts_content: |
       127.0.0.1 localhost

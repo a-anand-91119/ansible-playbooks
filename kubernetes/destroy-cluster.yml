@@ -1,6 +1,6 @@
 ---
 - name: Destroy the existing kubernetes cluster
-  hosts: all
+  hosts: all:!jump_server
   become: true
 
   tasks:

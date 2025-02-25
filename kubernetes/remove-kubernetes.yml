@@ -1,6 +1,6 @@
 ---
 - name: Cleanup Kubernetes, reset iptables, and reload systemd
-  hosts: all
+  hosts: all:!jump_server
   become: true
 
   tasks:
@@ -65,7 +65,7 @@
       ansible.builtin.command: systemctl daemon-reload
 
 - name: Remove containerd runtime
-  hosts: all
+  hosts: all:!jump_server
   become: true
 
   tasks:

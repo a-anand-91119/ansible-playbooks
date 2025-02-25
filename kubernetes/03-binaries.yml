@@ -1,6 +1,6 @@
 ---
 - name: Install all kubernetes tool binaries
-  hosts: all
+  hosts: all:!jump_server
   become: true
 
   tasks:
