@@ -3,6 +3,11 @@
   hosts: all:!jump_server
   become: true
   tasks:
+    - name: Check if /etc/multipath.conf exists
+      ansible.builtin.stat:
+        path: /etc/multipath.conf
+      register: multipath_conf
+
     - name: Ensure /etc/multipath.conf exists
       ansible.builtin.copy:
         dest: /etc/multipath.conf
@@ -11,7 +16,7 @@
               devnode "^sd[a-z0-9]+"
           }
         mode: '0644'
-      when: not ansible.builtin.stat(path='/etc/multipath.conf').stat.exists
+      when: not multipath_conf.stat.exists
 
     - name: Append blacklist entry if not present
       ansible.builtin.blockinfile:
@@ -21,7 +26,7 @@
               devnode "^sd[a-z0-9]+"
           }
         marker: "# {mark} ANSIBLE MANAGED BLOCK"
-      when: ansible.builtin.stat(path='/etc/multipath.conf').stat.exists
+      when: multipath_conf.stat.exists
 
     - name: Restart multipathd service
       ansible.builtin.systemd:
