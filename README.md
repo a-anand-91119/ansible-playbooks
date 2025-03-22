@@ -39,3 +39,6 @@ on bare-metal or vms.
    cluster. It'll only destroy the cluster. All the tools and pre-requisites installed won't be remobed.
 9. [remove-kubernetes.yml](kubernetes%2Fremove-kubernetes.yml) **[Teardown]**: Completely remove all the tools and
    packages installed by the playbooks in this repo.
+
+### Appendix
+- https://blog.codefarm.me/2019/01/28/bootstrapping-kubernetes-clusters-with-kubeadm/
