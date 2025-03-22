@@ -1,0 +1,26 @@
+---
+- name: Destroy the existing kubernetes cluster
+  hosts: control_plane
+  become: true
+  tasks:
+    - name: Update --bind-address in kube-controller-manager.yaml
+      ansible.builtin.replace:
+        path: /etc/kubernetes/manifests/kube-controller-manager.yaml
+        regexp: '--bind-address=127\.0\.0\.1'
+        replace: '--bind-address=0.0.0.0'
+
+    - name: Update --bind-address in kube-scheduler.yaml
+      ansible.builtin.replace:
+        path: /etc/kubernetes/manifests/kube-scheduler.yaml
+        regexp: '--bind-address=127\.0\.0\.1'
+        replace: '--bind-address=0.0.0.0'
+
+    - name: Set master IP from inventory
+      ansible.builtin.set_fact:
+        master_ip: "{{ hostvars[inventory_hostname]['ansible_host'] }}"
+
+    - name: Update --listen-metrics-urls in etcd.yaml
+      ansible.builtin.replace:
+        path: /etc/kubernetes/manifests/etcd.yaml
+        regexp: '--listen-metrics-urls=http://127\.0\.0\.1:2381'
+        replace: '--listen-metrics-urls=http://127.0.0.1:2381,http://{{ master_ip }}:2381'
