@@ -22,5 +22,5 @@
     - name: Update --listen-metrics-urls in etcd.yaml
       ansible.builtin.replace:
         path: /etc/kubernetes/manifests/etcd.yaml
-        regexp: '--listen-metrics-urls=http://127\.0\.0\.1:2381'
+        regexp: '--listen-metrics-urls=([^ ]*127\.0\.0\.1:2381)$'
         replace: '--listen-metrics-urls=http://127.0.0.1:2381,http://{{ master_ip }}:2381'
