@@ -1,0 +1,122 @@
+---
+- name: Perform all network related prerequisites for kubernetes
+  hosts: all:!jump_server
+  become: true
+
+  vars:
+    DISABLE_CLOUD_INIT: "{{ lookup('ansible.builtin.env', 'DISABLE_CLOUD_INIT') }}" # noqa: var-naming[pattern]
+    cni_version: "{{ lookup('ansible.builtin.env', 'CNI_PLUGIN_VERSION') }}"
+
+  tasks:
+    - name: Set hostname to match the inventory name
+      ansible.builtin.hostname:
+        name: "{{ inventory_hostname }}"
+
+    - name: Ensure hostname is reflected in /etc/hosts
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        regexp: ^127\.0\.1\.1\s+
+        line: 127.0.1.1 {{ inventory_hostname }}
+        state: present
+
+    - name: Disable cloud-init's network configuration
+      ansible.builtin.file:
+        path: /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg
+        state: touch
+        mode: "0644"
+
+    - name: Write content to disable cloud-init network configuration
+      when: DISABLE_CLOUD_INIT == "true"
+      ansible.builtin.copy:
+        dest: /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg
+        content: |
+          network: {config: disabled}
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Create netplan config for static IP
+      when: DISABLE_CLOUD_INIT == "true"
+      ansible.builtin.copy:
+        dest: /etc/netplan/00_installer_config.yaml
+        content: |
+          network:
+            version: 2
+            renderer: networkd
+            ethernets:
+              enp1s0:
+                addresses:
+                  - {{ hostvars[inventory_hostname]['ansible_host'] }}/24
+                routes:
+                  - to: default
+                    via: {{ hostvars[inventory_hostname]['gateway'] }}
+                nameservers:
+                  addresses: {{ hostvars[inventory_hostname]['nameservers'] }}
+        owner: root
+        group: root
+        mode: "0600"
+
+    - name: Apply netplan configuration
+      when: DISABLE_CLOUD_INIT == "true"
+      ansible.builtin.command: netplan apply
+      changed_when: false
+
+    - name: Create a empty file for kubernetes sysctl params.
+      ansible.builtin.copy:
+        content: ""
+        dest: /etc/sysctl.d/99-kubernetes-cri.conf
+        force: false
+        mode: "0644"
+
+    - name: Configure sysctl params for Kubernetes.
+      ansible.builtin.lineinfile:
+        path: /etc/sysctl.d/99-kubernetes-cri.conf
+        line: "{{ item }}"
+      with_items:
+        - net.bridge.bridge-nf-call-iptables  = 1
+        - net.bridge.bridge-nf-call-ip6tables = 1
+        - net.ipv4.ip_forward                 = 1
+
+    - name: Apply sysctl params without reboot.
+      ansible.builtin.command: sysctl --system
+      changed_when: false
+
+    - name: Load br_netfilter module again (if needed)
+      ansible.builtin.command: modprobe br_netfilter
+      changed_when: false
+
+    - name: Apply sysctl from /etc/sysctl.conf
+      ansible.builtin.command: sysctl -p /etc/sysctl.conf
+      changed_when: false
+
+    - name: Verify sysctl params
+      ansible.builtin.command: sysctl {{ item }}
+      with_items:
+        - net.bridge.bridge-nf-call-iptables
+        - net.bridge.bridge-nf-call-ip6tables
+        - net.ipv4.ip_forward
+      register: sysctl_check
+      changed_when: false
+
+    - name: Display verification results
+      ansible.builtin.debug:
+        var: sysctl_check.stdout_lines
+
+    - name: Download CNI plugins
+      ansible.builtin.get_url:
+        url: "https://github.com/containernetworking/plugins/releases/download/{{ cni_version }}/cni-plugins-linux-amd64-{{ cni_version }}.tgz"
+        dest: "/tmp/cni-plugins-linux-amd64-{{ cni_version }}.tgz"
+        mode: "0644"
+
+    - name: Create CNI bin directory
+      ansible.builtin.file:
+        path: /opt/cni/bin
+        state: directory
+        mode: "0755"
+
+    - name: Extract CNI plugins
+      ansible.builtin.unarchive:
+        src: "/tmp/cni-plugins-linux-amd64-{{ cni_version }}.tgz"
+        dest: /opt/cni/bin
+        remote_src: true
+        extra_opts: [--strip-components=1]

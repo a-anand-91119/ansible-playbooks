@@ -6,7 +6,8 @@
   tasks:
     - name: Reset Kubernetes cluster
       ansible.builtin.command: kubeadm reset --force
-      ignore_errors: true
+      changed_when: false
+      failed_when: false
 
     - name: Purge Kubernetes packages
       ansible.builtin.apt:
@@ -42,7 +43,7 @@
         - /var/lib/kubelet
         - /var/lib/etcd2
         - /var/run/kubernetes
-      ignore_errors: true
+      failed_when: false
 
     - name: Clean up unused dependencies
       ansible.builtin.apt:
@@ -51,18 +52,23 @@
 
     - name: Flush and delete iptables filter table
       ansible.builtin.command: iptables -F && iptables -X
+      changed_when: false
 
     - name: Flush and delete iptables NAT table
       ansible.builtin.command: iptables -t nat -F && iptables -t nat -X
+      changed_when: false
 
     - name: Flush and delete iptables raw table
       ansible.builtin.command: iptables -t raw -F && iptables -t raw -X
+      changed_when: false
 
     - name: Flush and delete iptables mangle table
       ansible.builtin.command: iptables -t mangle -F && iptables -t mangle -X
+      changed_when: false
 
     - name: Reload systemd manager to apply changes
-      ansible.builtin.command: systemctl daemon-reload
+      ansible.builtin.systemd:
+        daemon_reload: true
 
 - name: Remove containerd runtime
   hosts: all:!jump_server

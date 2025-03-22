@@ -12,7 +12,7 @@ helm-charts/gitlab-runner/install.yml no-changed-when
 helm-charts/gitlab-runner/install.yml risky-file-permissions
 kubernetes/00-jump-server-prequisites.yml risky-file-permissions
 kubernetes/01-prerequisites.yml syntax-check[unknown-module]
-kubernetes/02-networking.yml syntax-check[unknown-module]
+kubernetes/02-a-firewall.yml syntax-check[unknown-module]
 kubernetes/03-binaries.yml no-changed-when
 kubernetes/03-binaries.yml yaml[line-length]
 kubernetes/04-control-plane.yml name[missing]

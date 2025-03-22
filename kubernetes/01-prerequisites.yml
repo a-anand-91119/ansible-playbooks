@@ -11,8 +11,9 @@
         force: true
 
     - name: Unload the runc AppArmor profile
-      command: apparmor_parser -R /etc/apparmor.d/runc
-      ignore_errors: true
+      ansible.builtin.command: apparmor_parser -R /etc/apparmor.d/runc
+      changed_when: false
+      failed_when: false
 
 - name: Disable swap on machines permanently
   hosts: all:!jump_server
@@ -28,8 +29,9 @@
         - none
 
     - name: Disable swap
-      command: swapoff -a
+      ansible.builtin.command: swapoff -a
       when: ansible_swaptotal_mb > 0
+      changed_when: false
 
     - name: Disable swap permanently, persist reboots
       ansible.builtin.replace:
@@ -62,20 +64,26 @@
         mode: "0644"
 
     - name: Load the overlay module
-      command: modprobe overlay
+      ansible.builtin.command: modprobe overlay
+      changed_when: false
 
     - name: Load the br_netfilter module
-      command: modprobe br_netfilter
+      ansible.builtin.command: modprobe br_netfilter
+      changed_when: false
 
     - name: Verify that the overlay module is loaded
-      ansible.builtin.shell: lsmod | grep overlay
+      ansible.builtin.shell: set -o pipefail && lsmod | grep overlay
       register: overlay_module
       changed_when: false
+      args:
+        executable: /bin/bash
 
     - name: Verify that the br_netfilter module is loaded
-      ansible.builtin.shell: lsmod | grep br_netfilter
+      ansible.builtin.shell: set -o pipefail && lsmod | grep br_netfilter
       register: br_netfilter_module
       changed_when: false
+      args:
+        executable: /bin/bash
 
     - name: Print overlay module load status
       ansible.builtin.debug:
@@ -85,7 +93,7 @@
       ansible.builtin.debug:
         msg: "br_netfilter module loaded: {{ br_netfilter_module.stdout }}"
 
-    - name: Add Docker’s official GPG key
+    - name: Add Docker's official GPG key
       ansible.builtin.apt_key:
         url: https://download.docker.com/linux/ubuntu/gpg
         state: present
@@ -96,7 +104,7 @@
         state: directory
         mode: "0755"
 
-    - name: Add Docker’s official GPG key
+    - name: Add Docker's official GPG key
       ansible.builtin.get_url:
         url: https://download.docker.com/linux/ubuntu/gpg
         dest: /etc/apt/keyrings/docker.asc
@@ -104,8 +112,8 @@
 
     - name: Add Docker Repository
       ansible.builtin.apt_repository:
-        repo: deb [arch={{ ansible_architecture }} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release
-          }} stable
+        repo: "deb [arch={{ ansible_architecture }} signed-by=/etc/apt/keyrings/docker.asc] \
+          https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
         filename: docker
         state: present
         update_cache: true
@@ -124,16 +132,16 @@
         state: present
 
     - name: Configure containerd.
-      file:
+      ansible.builtin.file:
         path: /etc/containerd
         state: directory
         mode: "0755"
 
     - name: Generate the default containerd configuration
-      ansible.builtin.shell: |
-        containerd config default | tee /etc/containerd/config.toml
+      ansible.builtin.shell: set -o pipefail && containerd config default | tee /etc/containerd/config.toml
       args:
         creates: /etc/containerd/config.toml
+        executable: /bin/bash
 
     - name: Update SystemdCgroup to true in containerd config
       ansible.builtin.lineinfile:

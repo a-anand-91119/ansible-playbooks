@@ -28,7 +28,7 @@
   tasks:
     - name: Allow Kubernetes control plane ports in UFW
       become: true
-      community.general.ufw:
+      ufw:
         rule: allow
         port: "{{ item.port }}"
         proto: "{{ item.proto }}"
@@ -61,12 +61,11 @@
         mode: "0700"
 
     - name: Run the Helm install script
-      shell: ./get_helm.sh
-      args:
-        chdir: /tmp
+      ansible.builtin.command: bash /tmp/get_helm.sh
+      changed_when: false
 
     - name: Verify Helm installation
-      shell: helm version
+      ansible.builtin.command: helm version
       register: helm_version_output
       changed_when: false
 
@@ -74,29 +73,36 @@
   hosts: jump_server
 
   vars:
-    KUBESEAL_VERSION: "{{ lookup('ansible.builtin.env', 'KUBESEAL_VERSION') }}"
+    kubeseal_version: "{{ lookup('ansible.builtin.env', 'KUBESEAL_VERSION') }}"
 
   tasks:
     - name: Download kubeseal
       ansible.builtin.get_url:
-        url: "https://github.com/bitnami-labs/sealed-secrets/releases/download/v{{ KUBESEAL_VERSION }}/kubeseal-{{ KUBESEAL_VERSION }}-linux-amd64.tar.gz"
-        dest: "/tmp/kubeseal-{{ KUBESEAL_VERSION }}-linux-amd64.tar.gz"
+        url: "https://github.com/bitnami-labs/sealed-secrets/releases/download/v{{ kubeseal_version }}/kubeseal-{{ kubeseal_version }}-linux-amd64.tar.gz"
+        dest: "/tmp/kubeseal-{{ kubeseal_version }}-linux-amd64.tar.gz"
+        mode: "0644"
 
-    - name: Extract kubeseal binary only
-      ansible.builtin.command:
-        cmd: "tar -xvzf /tmp/kubeseal-{{ KUBESEAL_VERSION }}-linux-amd64.tar.gz /tmp/kubeseal"
+    - name: Create temporary directory for extraction
+      ansible.builtin.file:
+        path: /tmp/kubeseal-extract
+        state: directory
+        mode: "0755"
+
+    - name: Extract kubeseal binary
+      ansible.builtin.unarchive:
+        src: "/tmp/kubeseal-{{ kubeseal_version }}-linux-amd64.tar.gz"
+        dest: /tmp/kubeseal-extract
+        remote_src: true
 
     - name: Install kubeseal binary
       become: true
-      ansible.builtin.command:
-        cmd: "install -m 755 /tmp/kubeseal /usr/local/bin/kubeseal"
+      ansible.builtin.command: install -m 755 /tmp/kubeseal-extract/kubeseal /usr/local/bin/kubeseal
+      changed_when: false
 
     - name: Clean up temporary files
       ansible.builtin.file:
-        path: "/tmp/kubeseal-{{ KUBESEAL_VERSION }}-linux-amd64.tar.gz"
+        path: "{{ item }}"
         state: absent
-
-    - name: Clean up temporary extracted file
-      ansible.builtin.file:
-        path: "/tmp/kubeseal"
-        state: absent
+      with_items:
+        - "/tmp/kubeseal-{{ kubeseal_version }}-linux-amd64.tar.gz"
+        - "/tmp/kubeseal-extract"

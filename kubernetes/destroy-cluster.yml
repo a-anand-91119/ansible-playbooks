@@ -6,7 +6,8 @@
   tasks:
     - name: Reset Kubernetes cluster (removes all nodes and config)
       ansible.builtin.command: kubeadm reset --force
-      ignore_errors: true
+      changed_when: false
+      failed_when: false
 
     - name: Remove Kubernetes configuration directory
       become: true
@@ -23,18 +24,26 @@
         state: absent
 
     - name: Remove network interface configurations (CNI)
-      ansible.builtin.command: rm -rf /etc/cni/net.d
-      ignore_errors: true
+      ansible.builtin.file:
+        path: /etc/cni/net.d
+        state: absent
+      failed_when: false
 
     - name: Flush all iptables rules
-      ansible.builtin.shell: |
-        iptables-save | grep -v KUBE | iptables-restore
-      ignore_errors: true
+      ansible.builtin.shell: set -o pipefail && iptables-save | grep -v KUBE | iptables-restore
+      failed_when: false
       register: iptables_cleanup
       timeout: 10
+      changed_when: false
+      args:
+        executable: /bin/bash
 
     - name: Clean up any additional containerd artifacts
       ansible.builtin.shell: |
+        set -o pipefail
         ctr -n k8s.io container ls | awk '{print $1}' | xargs --no-run-if-empty ctr -n k8s.io container rm
         ctr -n k8s.io image ls | awk '{print $1}' | xargs --no-run-if-empty ctr -n k8s.io image rm
-      ignore_errors: true
+      failed_when: false
+      changed_when: false
+      args:
+        executable: /bin/bash
