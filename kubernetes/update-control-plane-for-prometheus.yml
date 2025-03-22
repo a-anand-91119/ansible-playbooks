@@ -1,6 +1,6 @@
 ---
 - name: Destroy the existing kubernetes cluster
-  hosts: control_plane
+  hosts: control_plane,new_master
   become: true
   tasks:
     - name: Update --bind-address in kube-controller-manager.yaml
