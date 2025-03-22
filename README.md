@@ -4,6 +4,11 @@ This repo contains playbooks which can be used to provision aa fully fledged kub
 on bare-metal or vms.
 > The playbooks are organised in such a way that it can be used in Sempahore-ui
 
+# IMPORTANT
+> For metrics collection manually update `metricsBindAddress` of `kube-proxy` config map to `metricsBindAddress: "0.0.0.0:10249"` 
+> so that prometheus can collect metrics
+ 
+
 ### Steps
 
 1. Create a VM / use one server to install ansible and semaphore. You may use
