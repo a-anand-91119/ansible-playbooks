@@ -95,7 +95,7 @@
 
     - name: Upgrade kubeadm to target version
       ansible.builtin.apt:
-        name: "kubeadm={{ lookup('ansible.builtin.env', 'TARGET_KUBERNETES_VERSION') | regex_replace('^v', '') }}.x-*"
+        name: "kubeadm={{ lookup('ansible.builtin.env', 'TARGET_KUBERNETES_VERSION') | regex_replace('^v', '') }}"
         state: present
         force: true
 
