@@ -127,7 +127,7 @@
 
     - name: Upgrade kubeadm to target version
       ansible.builtin.apt:
-        name: "kubeadm={{ lookup('ansible.builtin.env', 'TARGET_KUBERNETES_VERSION') | regex_replace('^v', '') }}"
+        name: "kubeadm={{ lookup('ansible.builtin.env', 'TARGET_KUBERNETES_VERSION') | regex_replace('^v([0-9]+\\.[0-9]+).*', 'v\\1') }}"
         state: present
         force: true
 
@@ -186,8 +186,8 @@
     - name: Upgrade kubelet and kubectl
       ansible.builtin.apt:
         name:
-          - "kubelet={{ lookup('ansible.builtin.env', 'TARGET_KUBERNETES_VERSION') | regex_replace('^v', '') }}-*"
-          - "kubectl={{ lookup('ansible.builtin.env', 'TARGET_KUBERNETES_VERSION') | regex_replace('^v', '') }}-*"
+          - "kubelet={{ lookup('ansible.builtin.env', 'TARGET_KUBERNETES_VERSION') | regex_replace('^v([0-9]+\\.[0-9]+).*', 'v\\1') }}"
+          - "kubectl={{ lookup('ansible.builtin.env', 'TARGET_KUBERNETES_VERSION') | regex_replace('^v([0-9]+\\.[0-9]+).*', 'v\\1') }}"
         state: present
         force: true
 
@@ -242,7 +242,7 @@
 
     - name: Upgrade kubeadm to target version
       ansible.builtin.apt:
-        name: "kubeadm={{ lookup('ansible.builtin.env', 'TARGET_KUBERNETES_VERSION') | regex_replace('^v', '') }}-*"
+        name: "kubeadm={{ lookup('ansible.builtin.env', 'TARGET_KUBERNETES_VERSION') | regex_replace('^v([0-9]+\\.[0-9]+).*', 'v\\1') }}"
         state: present
         force: true
 
@@ -275,8 +275,8 @@
     - name: Upgrade kubelet and kubectl
       ansible.builtin.apt:
         name:
-          - "kubelet={{ lookup('ansible.builtin.env', 'TARGET_KUBERNETES_VERSION') | regex_replace('^v', '') }}-*"
-          - "kubectl={{ lookup('ansible.builtin.env', 'TARGET_KUBERNETES_VERSION') | regex_replace('^v', '') }}-*"
+          - "kubelet={{ lookup('ansible.builtin.env', 'TARGET_KUBERNETES_VERSION') | regex_replace('^v([0-9]+\\.[0-9]+).*', 'v\\1') }}"
+          - "kubectl={{ lookup('ansible.builtin.env', 'TARGET_KUBERNETES_VERSION') | regex_replace('^v([0-9]+\\.[0-9]+).*', 'v\\1') }}"
         state: present
         force: true
 
@@ -333,7 +333,7 @@
 
     - name: Upgrade kubeadm to target version
       ansible.builtin.apt:
-        name: "kubeadm={{ lookup('ansible.builtin.env', 'TARGET_KUBERNETES_VERSION') | regex_replace('^v', '') }}-*"
+        name: "kubeadm={{ lookup('ansible.builtin.env', 'TARGET_KUBERNETES_VERSION') | regex_replace('^v([0-9]+\\.[0-9]+).*', 'v\\1') }}"
         state: present
         force: true
 
@@ -366,8 +366,8 @@
     - name: Upgrade kubelet and kubectl
       ansible.builtin.apt:
         name:
-          - "kubelet={{ lookup('ansible.builtin.env', 'TARGET_KUBERNETES_VERSION') | regex_replace('^v', '') }}-*"
-          - "kubectl={{ lookup('ansible.builtin.env', 'TARGET_KUBERNETES_VERSION') | regex_replace('^v', '') }}-*"
+          - "kubelet={{ lookup('ansible.builtin.env', 'TARGET_KUBERNETES_VERSION') | regex_replace('^v([0-9]+\\.[0-9]+).*', 'v\\1') }}"
+          - "kubectl={{ lookup('ansible.builtin.env', 'TARGET_KUBERNETES_VERSION') | regex_replace('^v([0-9]+\\.[0-9]+).*', 'v\\1') }}"
         state: present
         force: true
 
