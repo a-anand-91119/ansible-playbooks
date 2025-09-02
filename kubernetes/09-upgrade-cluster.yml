@@ -446,7 +446,7 @@
       ansible.builtin.shell: |
         set -o pipefail && kubectl get pods --all-namespaces \
           --field-selector=status.phase!=Running,status.phase!=Succeeded \
-          | grep -v NAMESPACE | wc -l
+          | (grep -v NAMESPACE || true) | wc -l
       register: failed_pods
       changed_when: false
       args:
