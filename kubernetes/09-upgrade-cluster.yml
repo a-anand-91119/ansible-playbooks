@@ -228,7 +228,7 @@
         msg: "{{ node_status.stdout }}"
 
 - name: Upgrade additional control plane nodes
-  hosts: control_plane[1:]
+  hosts: control_plane[1:]:master_nodes
   become: true
   serial: 1
   tasks:
