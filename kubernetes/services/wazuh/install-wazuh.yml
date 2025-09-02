@@ -5,50 +5,62 @@
   tasks:
 
     - name: Clone the Wazuh Kubernetes repository
-      git:
+      ansible.builtin.git:
         repo: https://github.com/wazuh/wazuh-kubernetes.git
         dest: /tmp/wazuh-kubernetes
-        version: { { lookup('ansible.builtin.env', 'WAZUH_VERSION') } }
+        version: "{{ lookup('ansible.builtin.env', 'WAZUH_VERSION') }}"
         depth: 1
 
-    - name: Change directory to wazuh-kubernetes
-      command: chdir=/tmp/wazuh-kubernetes creates=/tmp/wazuh-kubernetes/envs/local-env/kustomization.yaml
+    - name: Check if kustomization.yaml exists
+      ansible.builtin.stat:
+        path: /tmp/wazuh-kubernetes/envs/local-env/kustomization.yaml
+      register: kustomization_check
 
     - name: Generate self-signed certificates for Wazuh indexer cluster
-      command: /bin/bash /tmp/wazuh-kubernetes/wazuh/certs/indexer_cluster/generate_certs.sh
+      ansible.builtin.command: /bin/bash /tmp/wazuh-kubernetes/wazuh/certs/indexer_cluster/generate_certs.sh
       args:
         chdir: /tmp/wazuh-kubernetes
+        creates: /tmp/wazuh-kubernetes/wazuh/certs/indexer_cluster/root-ca.pem
+      changed_when: true
 
     - name: Generate self-signed certificates for Wazuh dashboard cluster
-      command: /bin/bash /tmp/wazuh-kubernetes/wazuh/certs/dashboard_http/generate_certs.sh
+      ansible.builtin.command: /bin/bash /tmp/wazuh-kubernetes/wazuh/certs/dashboard_http/generate_certs.sh
       args:
         chdir: /tmp/wazuh-kubernetes
+        creates: /tmp/wazuh-kubernetes/wazuh/certs/dashboard_http/dashboard.pem
+      changed_when: true
 
     - name: Modify the storage class provisioner
-      replace:
+      ansible.builtin.replace:
         path: /tmp/wazuh-kubernetes/envs/local-env/storage-class.yaml
         regexp: 'provisioner: .*'
         replace: 'provisioner: driver.longhorn.io'
 
 
     - name: Apply the Wazuh manifests for local-env
-      command: kubectl apply -k envs/local-env/
+      ansible.builtin.command: kubectl apply -k envs/local-env/
       args:
         chdir: /tmp/wazuh-kubernetes
+      changed_when: true
+      register: apply_result
 
     - name: Wait for Wazuh pods to be running
-      shell: |
-        kubectl get pods -n wazuh | grep -v 'Running\|Completed'
+      ansible.builtin.shell: |
+        set -o pipefail && kubectl get pods -n wazuh | grep -v 'Running\|Completed'
       register: pod_status
       until: pod_status.stdout == ""
       retries: 10
       delay: 30
+      changed_when: false
+      failed_when: false
+      args:
+        executable: /bin/bash
 
     - name: Verify Wazuh deployment
-      shell: kubectl get pods -n wazuh
+      ansible.builtin.command: kubectl get pods -n wazuh
       register: wazuh_pods
       changed_when: false
 
     - name: Output Wazuh pods status
-      debug:
+      ansible.builtin.debug:
         var: wazuh_pods.stdout

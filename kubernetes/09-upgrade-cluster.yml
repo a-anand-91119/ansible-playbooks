@@ -1,0 +1,464 @@
+---
+- name: Pre-upgrade validation and backup
+  hosts: all:!jump_server
+  become: true
+  tasks:
+    - name: Verify required environment variable is set
+      ansible.builtin.fail:
+        msg: "TARGET_KUBERNETES_VERSION environment variable must be set"
+      when: lookup('ansible.builtin.env', 'TARGET_KUBERNETES_VERSION') == ""
+      run_once: true
+    - name: Check current Kubernetes version
+      ansible.builtin.shell: set -o pipefail && kubelet --version | cut -d' ' -f2
+      register: current_k8s_version
+      changed_when: false
+      args:
+        executable: /bin/bash
+
+    - name: Display current Kubernetes version
+      ansible.builtin.debug:
+        msg: "Current Kubernetes version: {{ current_k8s_version.stdout }}"
+
+    - name: Verify cluster is healthy before upgrade
+      ansible.builtin.command: kubectl get nodes
+      register: cluster_health
+      changed_when: false
+      delegate_to: "{{ groups['control_plane'][0] }}"
+      become: false
+      run_once: true
+
+    - name: Display cluster status
+      ansible.builtin.debug:
+        msg: "{{ cluster_health.stdout_lines }}"
+      run_once: true
+
+    - name: Create backup directory
+      ansible.builtin.file:
+        path: /backup/k8s-upgrade-{{ ansible_date_time.epoch }}
+        state: directory
+        mode: "0755"
+
+    - name: Backup important Kubernetes configs
+      ansible.builtin.copy:
+        src: "{{ item }}"
+        dest: /backup/k8s-upgrade-{{ ansible_date_time.epoch }}/
+        remote_src: true
+        mode: preserve
+      register: backup_result
+      loop:
+        - /etc/kubernetes/admin.conf
+        - /etc/kubernetes/kubelet.conf
+        - /etc/kubernetes/manifests/
+      when: inventory_hostname in groups['control_plane']
+      failed_when:
+        - backup_result is failed
+        - backup_result.msg is defined
+        - "'No such file or directory' not in backup_result.msg"
+
+    - name: Backup etcd data
+      ansible.builtin.shell: |
+        ETCDCTL_API=3 etcdctl snapshot save /backup/k8s-upgrade-{{ ansible_date_time.epoch }}/etcd-snapshot.db \
+          --endpoints=https://127.0.0.1:2379 \
+          --cacert=/etc/kubernetes/pki/etcd/ca.crt \
+          --cert=/etc/kubernetes/pki/etcd/server.crt \
+          --key=/etc/kubernetes/pki/etcd/server.key
+      when: inventory_hostname in groups['control_plane']
+      register: etcd_backup_result
+      failed_when: etcd_backup_result.rc != 0
+      changed_when: true
+
+    - name: Verify etcd backup
+      ansible.builtin.stat:
+        path: /backup/k8s-upgrade-{{ ansible_date_time.epoch }}/etcd-snapshot.db
+      register: etcd_backup_stat
+      when: inventory_hostname in groups['control_plane']
+
+    - name: Display etcd backup status
+      ansible.builtin.debug:
+        msg: "etcd backup created successfully at /backup/k8s-upgrade-{{ ansible_date_time.epoch }}/etcd-snapshot.db"
+      when:
+        - inventory_hostname in groups['control_plane']
+        - etcd_backup_stat.stat.exists
+
+- name: Upgrade first control plane node
+  hosts: control_plane[0]
+  become: true
+  serial: 1
+  tasks:
+    - name: Unhold kubeadm package
+      ansible.builtin.command: apt-mark unhold kubeadm
+      changed_when: false
+
+    - name: Update package cache
+      ansible.builtin.apt:
+        update_cache: true
+
+    - name: Upgrade kubeadm to target version
+      ansible.builtin.apt:
+        name: "kubeadm={{ lookup('ansible.builtin.env', 'TARGET_KUBERNETES_VERSION') | regex_replace('^v', '') }}-*"
+        state: present
+        force: true
+
+    - name: Hold kubeadm package
+      ansible.builtin.command: apt-mark hold kubeadm
+      changed_when: false
+
+    - name: Verify kubeadm version
+      ansible.builtin.command: kubeadm version
+      register: kubeadm_version
+      changed_when: false
+
+    - name: Display kubeadm version
+      ansible.builtin.debug:
+        msg: "{{ kubeadm_version.stdout }}"
+
+    - name: Plan the upgrade
+      ansible.builtin.command: kubeadm upgrade plan
+      register: upgrade_plan
+      changed_when: false
+
+    - name: Display upgrade plan
+      ansible.builtin.debug:
+        msg: "{{ upgrade_plan.stdout_lines }}"
+
+    - name: Validate upgrade plan output
+      ansible.builtin.fail:
+        msg: "Upgrade plan validation failed. Please review the plan output above."
+      when:
+        - "'You can now apply the upgrade' not in upgrade_plan.stdout"
+        - "'UPGRADE SUCCESSFUL' not in upgrade_plan.stdout"
+
+    - name: Pause for manual confirmation
+      ansible.builtin.pause:
+        prompt: "Review the upgrade plan above. Press ENTER to continue with the upgrade or Ctrl+C to abort"
+
+    - name: Apply the upgrade
+      ansible.builtin.command: kubeadm upgrade apply {{ lookup('ansible.builtin.env', 'TARGET_KUBERNETES_VERSION') }} -y
+      register: upgrade_result
+      changed_when: false
+      timeout: 600
+      failed_when: upgrade_result.rc != 0
+
+    - name: Display upgrade result
+      ansible.builtin.debug:
+        msg: "{{ upgrade_result.stdout_lines }}"
+
+    - name: Drain the control plane node
+      ansible.builtin.command: kubectl drain {{ inventory_hostname }} --ignore-daemonsets --delete-emptydir-data --force
+      register: drain_result
+      changed_when: false
+      become: false
+
+    - name: Unhold kubelet and kubectl packages
+      ansible.builtin.command: apt-mark unhold kubelet kubectl
+      changed_when: false
+
+    - name: Upgrade kubelet and kubectl
+      ansible.builtin.apt:
+        name:
+          - "kubelet={{ lookup('ansible.builtin.env', 'TARGET_KUBERNETES_VERSION') | regex_replace('^v', '') }}-*"
+          - "kubectl={{ lookup('ansible.builtin.env', 'TARGET_KUBERNETES_VERSION') | regex_replace('^v', '') }}-*"
+        state: present
+        force: true
+
+    - name: Hold kubelet and kubectl packages
+      ansible.builtin.command: apt-mark hold kubelet kubectl
+      changed_when: false
+
+    - name: Reload systemd daemon
+      ansible.builtin.systemd:
+        daemon_reload: true
+
+    - name: Restart kubelet
+      ansible.builtin.systemd:
+        name: kubelet
+        state: restarted
+
+    - name: Wait for kubelet to be ready
+      ansible.builtin.wait_for:
+        port: 10250
+        host: "{{ inventory_hostname }}"
+        delay: 10
+        timeout: 300
+
+    - name: Uncordon the control plane node
+      ansible.builtin.command: kubectl uncordon {{ inventory_hostname }}
+      register: uncordon_result
+      changed_when: false
+      become: false
+
+    - name: Verify node is ready
+      ansible.builtin.command: kubectl get nodes {{ inventory_hostname }}
+      register: node_status
+      changed_when: false
+      become: false
+
+    - name: Display node status
+      ansible.builtin.debug:
+        msg: "{{ node_status.stdout }}"
+
+- name: Upgrade additional control plane nodes
+  hosts: control_plane[1:]
+  become: true
+  serial: 1
+  tasks:
+    - name: Unhold kubeadm package
+      ansible.builtin.command: apt-mark unhold kubeadm
+      changed_when: false
+
+    - name: Update package cache
+      ansible.builtin.apt:
+        update_cache: true
+
+    - name: Upgrade kubeadm to target version
+      ansible.builtin.apt:
+        name: "kubeadm={{ lookup('ansible.builtin.env', 'TARGET_KUBERNETES_VERSION') | regex_replace('^v', '') }}-*"
+        state: present
+        force: true
+
+    - name: Hold kubeadm package
+      ansible.builtin.command: apt-mark hold kubeadm
+      changed_when: false
+
+    - name: Upgrade the node
+      ansible.builtin.command: kubeadm upgrade node
+      register: node_upgrade_result
+      changed_when: false
+      timeout: 300
+      failed_when: node_upgrade_result.rc != 0
+
+    - name: Display node upgrade result
+      ansible.builtin.debug:
+        msg: "{{ node_upgrade_result.stdout_lines }}"
+
+    - name: Drain the control plane node
+      ansible.builtin.command: kubectl drain {{ inventory_hostname }} --ignore-daemonsets --delete-emptydir-data --force
+      delegate_to: "{{ groups['control_plane'][0] }}"
+      become: false
+      register: drain_result
+      changed_when: false
+
+    - name: Unhold kubelet and kubectl packages
+      ansible.builtin.command: apt-mark unhold kubelet kubectl
+      changed_when: false
+
+    - name: Upgrade kubelet and kubectl
+      ansible.builtin.apt:
+        name:
+          - "kubelet={{ lookup('ansible.builtin.env', 'TARGET_KUBERNETES_VERSION') | regex_replace('^v', '') }}-*"
+          - "kubectl={{ lookup('ansible.builtin.env', 'TARGET_KUBERNETES_VERSION') | regex_replace('^v', '') }}-*"
+        state: present
+        force: true
+
+    - name: Hold kubelet and kubectl packages
+      ansible.builtin.command: apt-mark hold kubelet kubectl
+      changed_when: false
+
+    - name: Reload systemd daemon
+      ansible.builtin.systemd:
+        daemon_reload: true
+
+    - name: Restart kubelet
+      ansible.builtin.systemd:
+        name: kubelet
+        state: restarted
+
+    - name: Wait for kubelet to be ready
+      ansible.builtin.wait_for:
+        port: 10250
+        host: "{{ inventory_hostname }}"
+        delay: 10
+        timeout: 300
+
+    - name: Uncordon the control plane node
+      ansible.builtin.command: kubectl uncordon {{ inventory_hostname }}
+      delegate_to: "{{ groups['control_plane'][0] }}"
+      become: false
+      register: uncordon_result
+      changed_when: false
+
+    - name: Verify node is ready
+      ansible.builtin.command: kubectl get nodes {{ inventory_hostname }}
+      delegate_to: "{{ groups['control_plane'][0] }}"
+      become: false
+      register: node_status
+      changed_when: false
+
+    - name: Display node status
+      ansible.builtin.debug:
+        msg: "{{ node_status.stdout }}"
+
+- name: Upgrade worker nodes
+  hosts: workers
+  become: true
+  serial: 1
+  tasks:
+    - name: Unhold kubeadm package
+      ansible.builtin.command: apt-mark unhold kubeadm
+      changed_when: false
+
+    - name: Update package cache
+      ansible.builtin.apt:
+        update_cache: true
+
+    - name: Upgrade kubeadm to target version
+      ansible.builtin.apt:
+        name: "kubeadm={{ lookup('ansible.builtin.env', 'TARGET_KUBERNETES_VERSION') | regex_replace('^v', '') }}-*"
+        state: present
+        force: true
+
+    - name: Hold kubeadm package
+      ansible.builtin.command: apt-mark hold kubeadm
+      changed_when: false
+
+    - name: Upgrade the worker node
+      ansible.builtin.command: kubeadm upgrade node
+      register: worker_upgrade_result
+      changed_when: false
+      timeout: 300
+      failed_when: worker_upgrade_result.rc != 0
+
+    - name: Display worker upgrade result
+      ansible.builtin.debug:
+        msg: "{{ worker_upgrade_result.stdout_lines }}"
+
+    - name: Drain the worker node
+      ansible.builtin.command: kubectl drain {{ inventory_hostname }} --ignore-daemonsets --delete-emptydir-data --force
+      delegate_to: "{{ groups['control_plane'][0] }}"
+      become: false
+      register: drain_result
+      changed_when: false
+
+    - name: Unhold kubelet and kubectl packages
+      ansible.builtin.command: apt-mark unhold kubelet kubectl
+      changed_when: false
+
+    - name: Upgrade kubelet and kubectl
+      ansible.builtin.apt:
+        name:
+          - "kubelet={{ lookup('ansible.builtin.env', 'TARGET_KUBERNETES_VERSION') | regex_replace('^v', '') }}-*"
+          - "kubectl={{ lookup('ansible.builtin.env', 'TARGET_KUBERNETES_VERSION') | regex_replace('^v', '') }}-*"
+        state: present
+        force: true
+
+    - name: Hold kubelet and kubectl packages
+      ansible.builtin.command: apt-mark hold kubelet kubectl
+      changed_when: false
+
+    - name: Reload systemd daemon
+      ansible.builtin.systemd:
+        daemon_reload: true
+
+    - name: Restart kubelet
+      ansible.builtin.systemd:
+        name: kubelet
+        state: restarted
+
+    - name: Wait for kubelet to be ready
+      ansible.builtin.wait_for:
+        port: 10250
+        host: "{{ inventory_hostname }}"
+        delay: 10
+        timeout: 300
+
+    - name: Uncordon the worker node
+      ansible.builtin.command: kubectl uncordon {{ inventory_hostname }}
+      delegate_to: "{{ groups['control_plane'][0] }}"
+      become: false
+      register: uncordon_result
+      changed_when: false
+
+    - name: Verify node is ready
+      ansible.builtin.command: kubectl get nodes {{ inventory_hostname }}
+      delegate_to: "{{ groups['control_plane'][0] }}"
+      become: false
+      register: node_status
+      changed_when: false
+
+    - name: Display node status
+      ansible.builtin.debug:
+        msg: "{{ node_status.stdout }}"
+
+- name: Post-upgrade validation
+  hosts: control_plane[0]
+  become: false
+  tasks:
+    - name: Wait for all nodes to be ready
+      ansible.builtin.shell: set -o pipefail && kubectl get nodes --no-headers | grep -v Ready | wc -l
+      register: unready_nodes
+      retries: 30
+      delay: 10
+      until: unready_nodes.stdout | int == 0
+      changed_when: false
+      args:
+        executable: /bin/bash
+      failed_when: unready_nodes.stdout | int > 0
+
+    - name: Check cluster status after upgrade
+      ansible.builtin.command: kubectl get nodes -o wide
+      register: final_cluster_status
+      changed_when: false
+
+    - name: Display final cluster status
+      ansible.builtin.debug:
+        msg: "{{ final_cluster_status.stdout_lines }}"
+
+    - name: Verify all system pods are running
+      ansible.builtin.command: kubectl get pods -n kube-system
+      register: system_pods
+      changed_when: false
+
+    - name: Display system pods status
+      ansible.builtin.debug:
+        msg: "{{ system_pods.stdout_lines }}"
+
+    - name: Check for any failed pods
+      ansible.builtin.shell: |
+        set -o pipefail && kubectl get pods --all-namespaces \
+          --field-selector=status.phase!=Running,status.phase!=Succeeded \
+          | grep -v NAMESPACE | wc -l
+      register: failed_pods
+      changed_when: false
+      args:
+        executable: /bin/bash
+
+    - name: Check CNI plugin version
+      ansible.builtin.shell: |
+        set -o pipefail && kubectl get daemonset -n kube-system \
+          -o jsonpath='{.items[*].spec.template.spec.containers[*].image}' \
+          | grep -E '(calico|flannel|weave|cilium)'
+      register: cni_images
+      changed_when: false
+      failed_when: false
+      args:
+        executable: /bin/bash
+
+    - name: Display CNI plugin information
+      ansible.builtin.debug:
+        msg: |
+          Current CNI plugin images: {{ cni_images.stdout }}
+          IMPORTANT: CNI plugins are not automatically upgraded by kubeadm.
+          You may need to manually upgrade your CNI plugin after the Kubernetes
+          upgrade. Please consult your CNI provider's documentation for upgrade
+          instructions.
+      when: cni_images.stdout | length > 0
+
+    - name: Display upgrade success message
+      ansible.builtin.debug:
+        msg: "Kubernetes cluster successfully upgraded to {{ lookup('ansible.builtin.env', 'TARGET_KUBERNETES_VERSION') }}!"
+      when: failed_pods.stdout | int == 0
+
+    - name: Display warning if pods are not ready
+      ansible.builtin.debug:
+        msg: "Warning: {{ failed_pods.stdout }} pods are not in Running or Succeeded state. Please investigate."
+      when: failed_pods.stdout | int > 0
+
+    - name: Post-upgrade recommendations
+      ansible.builtin.debug:
+        msg: |
+          Kubernetes cluster upgrade completed. Please verify:
+          1. All nodes are in Ready state
+          2. All system pods are running
+          3. CNI plugin compatibility with new Kubernetes version
+          4. Any custom applications are functioning correctly
+          5. Consider updating CNI plugin if needed
