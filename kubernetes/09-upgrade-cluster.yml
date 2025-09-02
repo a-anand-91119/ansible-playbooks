@@ -80,6 +80,38 @@
         - inventory_hostname in groups['control_plane']
         - etcd_backup_stat.stat.exists
 
+- name: Update Kubernetes repository for target version
+  hosts: all:!jump_server
+  become: true
+  tasks:
+    - name: Download new Kubernetes GPG key
+      ansible.builtin.get_url:
+        url: >
+          https://pkgs.k8s.io/core:/stable:/{{ lookup('ansible.builtin.env', 'TARGET_KUBERNETES_VERSION') |
+          regex_replace('^v([0-9]+\.[0-9]+).*', 'v\1') }}/deb/Release.key
+        dest: /etc/apt/keyrings/kubernetes-release-key-new.gpg
+        mode: "0644"
+
+    - name: Convert new GPG key to dearmored format
+      ansible.builtin.command: gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring-new.gpg /etc/apt/keyrings/kubernetes-release-key-new.gpg
+      args:
+        creates: /etc/apt/keyrings/kubernetes-apt-keyring-new.gpg
+
+    - name: Update Kubernetes apt repository to target version
+      ansible.builtin.copy:
+        dest: /etc/apt/sources.list.d/kubernetes.list
+        content: >
+          deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring-new.gpg]
+          https://pkgs.k8s.io/core:/stable:/{{ lookup('ansible.builtin.env', 'TARGET_KUBERNETES_VERSION') |
+          regex_replace('^v([0-9]+\.[0-9]+).*', 'v\1') }}/deb/ /
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Update apt package index
+      ansible.builtin.apt:
+        update_cache: true
+
 - name: Upgrade first control plane node
   hosts: control_plane[0]
   become: true
