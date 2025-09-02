@@ -160,12 +160,10 @@
         - "'You can now apply the upgrade' not in upgrade_plan.stdout"
         - "'UPGRADE SUCCESSFUL' not in upgrade_plan.stdout"
 
-    - name: Pause for manual confirmation
-      ansible.builtin.pause:
-        prompt: "Review the upgrade plan above. Press ENTER to continue with the upgrade or Ctrl+C to abort"
-
     - name: Apply the upgrade
-      ansible.builtin.command: kubeadm upgrade apply {{ lookup('ansible.builtin.env', 'TARGET_KUBERNETES_VERSION') }} -y
+      ansible.builtin.command: >
+        kubeadm upgrade apply {{ lookup('ansible.builtin.env', 'TARGET_KUBERNETES_VERSION') |
+        regex_replace('^v([0-9]+\.[0-9]+\.[0-9]+).*', 'v\1') }} -y
       register: upgrade_result
       changed_when: false
       timeout: 600
