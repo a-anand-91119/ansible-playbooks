@@ -3,6 +3,13 @@
   hosts: control_plane
   become: true
   tasks:
+    - name: Install etcd-client
+      ansible.builtin.apt:
+        name:
+          - etcd-client
+        state: present
+        update_cache: true
+
     - name: Ensure jq and curl are installed
       ansible.builtin.package:
         name: "{{ item }}"

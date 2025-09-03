@@ -12,7 +12,6 @@
           - curl
           - gpg
           - gnupg-agent
-          - etcd-client
         state: present
         update_cache: true
 
