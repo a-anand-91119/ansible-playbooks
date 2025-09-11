@@ -23,53 +23,44 @@
         suffix: wazuh
       register: temp_dir
 
-    - name: Display configuration that will be used
+    - name: Download Wazuh agent package
+      ansible.builtin.get_url:
+        url: "https://packages.wazuh.com/4.x/apt/pool/main/w/wazuh-agent/wazuh-agent_{{ wazuh_agent_version }}_amd64.deb"
+        dest: "{{ temp_dir.path }}/wazuh-agent_{{ wazuh_agent_version }}_amd64.deb"
+        mode: '0644'
+
+    - name: Install Wazuh agent with configuration
+      ansible.builtin.apt:
+        deb: "{{ temp_dir.path }}/wazuh-agent_{{ wazuh_agent_version }}_amd64.deb"
+        state: present
+      environment:
+        WAZUH_MANAGER: "{{ wazuh_manager }}"
+        WAZUH_AGENT_GROUP: "{{ wazuh_agent_groups }}"
+        WAZUH_AGENT_NAME: "{{ inventory_hostname }}"
+
+    - name: Reload systemd daemon
+      ansible.builtin.systemd:
+        daemon_reload: true
+
+    - name: Enable Wazuh agent service
+      ansible.builtin.systemd:
+        name: wazuh-agent
+        enabled: true
+
+    - name: Start Wazuh agent service
+      ansible.builtin.systemd:
+        name: wazuh-agent
+        state: started
+
+    - name: Clean up temporary directory
+      ansible.builtin.file:
+        path: "{{ temp_dir.path }}"
+        state: absent
+
+    - name: Display agent configuration
       ansible.builtin.debug:
         msg: |
-          Wazuh agent configuration:
+          Wazuh agent installed successfully:
           - Agent Name: {{ inventory_hostname }}
           - Manager: {{ wazuh_manager }}
           - Groups: {{ wazuh_agent_groups }}
-          - Version: {{ wazuh_agent_version }}
-
-#    - name: Download Wazuh agent package
-#      ansible.builtin.get_url:
-#        url: "https://packages.wazuh.com/4.x/apt/pool/main/w/wazuh-agent/wazuh-agent_{{ wazuh_agent_version }}_amd64.deb"
-#        dest: "{{ temp_dir.path }}/wazuh-agent_{{ wazuh_agent_version }}_amd64.deb"
-#        mode: '0644'
-#
-#    - name: Install Wazuh agent with configuration
-#      ansible.builtin.apt:
-#        deb: "{{ temp_dir.path }}/wazuh-agent_{{ wazuh_agent_version }}_amd64.deb"
-#        state: present
-#      environment:
-#        WAZUH_MANAGER: "{{ wazuh_manager }}"
-#        WAZUH_AGENT_GROUP: "{{ wazuh_agent_groups }}"
-#        WAZUH_AGENT_NAME: "{{ inventory_hostname }}"
-#
-#    - name: Reload systemd daemon
-#      ansible.builtin.systemd:
-#        daemon_reload: true
-#
-#    - name: Enable Wazuh agent service
-#      ansible.builtin.systemd:
-#        name: wazuh-agent
-#        enabled: true
-#
-#    - name: Start Wazuh agent service
-#      ansible.builtin.systemd:
-#        name: wazuh-agent
-#        state: started
-#
-#    - name: Clean up temporary directory
-#      ansible.builtin.file:
-#        path: "{{ temp_dir.path }}"
-#        state: absent
-#
-#    - name: Display agent configuration
-#      ansible.builtin.debug:
-#        msg: |
-#          Wazuh agent installed successfully:
-#          - Agent Name: {{ inventory_hostname }}
-#          - Manager: {{ wazuh_manager }}
-#          - Groups: {{ wazuh_agent_groups }}
