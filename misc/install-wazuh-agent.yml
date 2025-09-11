@@ -13,7 +13,7 @@
           {{
             (group_names |
              intersect(['bare-metal', 'proxmox-vms', 'unraid-vms']) +
-             ['kubernetes']
+             (group_names | intersect(['kubernetes']) | length > 0) | ternary(['kubernetes'], [])
             ) | join(',')
           }}
 
