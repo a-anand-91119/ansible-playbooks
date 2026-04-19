@@ -1,4 +1,64 @@
 ---
+- name: Renew certificates if expired
+  hosts: control_plane
+  become: true
+  tasks:
+    - name: Check certificate expiration
+      ansible.builtin.command: kubeadm certs check-expiration
+      register: cert_check
+      changed_when: false
+      failed_when: false
+
+    - name: Display certificate status
+      ansible.builtin.debug:
+        msg: "{{ cert_check.stdout_lines }}"
+
+    - name: Renew all certificates if any are expired
+      ansible.builtin.command: kubeadm certs renew all
+      register: cert_renew
+      when: "'EXPIRED' in cert_check.stdout or 'invalid' in cert_check.stderr"
+      changed_when: cert_renew.rc == 0
+
+    - name: Restart control plane static pods after cert renewal # noqa: no-handler
+      when: cert_renew is changed
+      block:
+        - name: Move manifests to trigger pod shutdown
+          ansible.builtin.command: mv /etc/kubernetes/manifests /etc/kubernetes/manifests.bak
+          changed_when: true
+
+        - name: Wait for static pods to stop
+          ansible.builtin.pause:
+            seconds: 15
+
+        - name: Restore manifests to restart static pods
+          ansible.builtin.command: mv /etc/kubernetes/manifests.bak /etc/kubernetes/manifests
+          changed_when: true
+
+        - name: Wait for static pods to come back up
+          ansible.builtin.pause:
+            seconds: 30
+
+        - name: Restart kubelet
+          ansible.builtin.systemd:
+            name: kubelet
+            state: restarted
+
+        - name: Wait for API server to be ready
+          ansible.builtin.wait_for:
+            port: 6443
+            host: "{{ inventory_hostname }}"
+            delay: 5
+            timeout: 120
+
+    - name: Update local kubeconfig with renewed admin.conf # noqa: no-handler
+      ansible.builtin.copy:
+        src: /etc/kubernetes/admin.conf
+        dest: "{{ ansible_env.HOME }}/.kube/config"
+        remote_src: true
+        owner: "{{ ansible_env.SUDO_USER | default(ansible_user_id) }}"
+        mode: "0600"
+      when: cert_renew is changed
+
 - name: Pre-upgrade validation and backup
   hosts: all:!jump_server
   become: true
