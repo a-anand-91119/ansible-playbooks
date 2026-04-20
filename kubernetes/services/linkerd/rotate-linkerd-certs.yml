@@ -30,13 +30,18 @@
           Current issuer cert expires: {{ current_expiry.stdout | default('NOT FOUND') }}.
           {{ 'ROTATION NEEDED' if cert_check.rc != 0 else 'Certificate is still valid beyond threshold' }}.
 
+    - name: Skip if no rotation needed
+      ansible.builtin.meta: end_play
+      when: cert_check.rc == 0
+
+    # --- Rotation needed from here ---
+
     - name: Backup current issuer certificate
       ansible.builtin.copy:
         src: "{{ cert_dir }}/issuer-cert.pem"
         dest: "{{ cert_dir }}/issuer-cert.pem.bak.{{ ansible_date_time.iso8601_basic_short }}"
         remote_src: true
         mode: "0600"
-      when: cert_check.rc != 0
 
     - name: Backup current issuer key
       ansible.builtin.copy:
@@ -44,13 +49,11 @@
         dest: "{{ cert_dir }}/issuer-key.pem.bak.{{ ansible_date_time.iso8601_basic_short }}"
         remote_src: true
         mode: "0600"
-      when: cert_check.rc != 0
 
     - name: Generate new issuer key # noqa: no-changed-when
       ansible.builtin.command: >
         openssl ecparam -name prime256v1 -genkey -noout
         -out {{ cert_dir }}/issuer-key.pem
-      when: cert_check.rc != 0
 
     - name: Generate new issuer certificate # noqa: no-changed-when
       ansible.builtin.shell:
@@ -69,7 +72,6 @@
             -sha256 \
             -extfile {{ cert_dir }}/issuer-ext.cnf \
             -extensions v3_intermediate_ca
-      when: cert_check.rc != 0
 
     - name: Upgrade Linkerd control plane with new certificates # noqa: no-changed-when risky-shell-pipe
       ansible.builtin.shell:
@@ -80,16 +82,6 @@
             --identity-issuer-key-file {{ cert_dir }}/issuer-key.pem \
             | kubectl apply -f -
         executable: /bin/bash
-      when: cert_check.rc != 0
-
-    - name: Wait for Linkerd control plane to be ready
-      ansible.builtin.command: "{{ linkerd_bin }} check"
-      retries: 20
-      delay: 15
-      register: linkerd_check
-      until: linkerd_check.rc == 0
-      changed_when: false
-      when: cert_check.rc != 0
 
     - name: Restart meshed pods to pick up new trust bundle # noqa: no-changed-when
       ansible.builtin.shell:
@@ -101,16 +93,14 @@
                 kubectl delete pod -n "$ns" "$pod" --grace-period=30 2>/dev/null || true
               done
         executable: /bin/bash
-      when: cert_check.rc != 0
 
-    - name: Wait for all pods to stabilize after restart
-      ansible.builtin.command: "{{ linkerd_bin }} check"
-      retries: 20
-      delay: 15
-      register: final_check
-      until: final_check.rc == 0
+    - name: Wait for Linkerd to be fully ready
+      ansible.builtin.command: "{{ linkerd_bin }} check --wait 10m"
+      retries: 3
+      delay: 30
+      register: linkerd_check
+      until: linkerd_check.rc == 0
       changed_when: false
-      when: cert_check.rc != 0
 
     - name: Display new certificate expiry
       ansible.builtin.shell:
@@ -119,14 +109,7 @@
           openssl x509 -noout -dates -in {{ cert_dir }}/issuer-cert.pem
       register: new_cert_dates
       changed_when: false
-      when: cert_check.rc != 0
 
     - name: Show new certificate info
       ansible.builtin.debug:
         var: new_cert_dates.stdout_lines
-      when: cert_check.rc != 0
-
-    - name: Skip message
-      ansible.builtin.debug:
-        msg: "No rotation needed. Issuer cert is valid beyond {{ expiry_threshold_days }} days."
-      when: cert_check.rc == 0

@@ -100,12 +100,14 @@
       changed_when: false
       when: linkerd_ns.rc != 0
 
+    # --- Apply all components first, then validate ---
+
     - name: "Linkerd CRDs - {{ linkerd_cmd }}" # noqa: no-changed-when risky-shell-pipe
       ansible.builtin.shell:
         cmd: "set -o pipefail && {{ linkerd_bin }} {{ linkerd_cmd }} --crds {{ linkerd_force }} | kubectl apply -f -"
         executable: /bin/bash
 
-    - name: "Linkerd control plane with custom certificates - {{ linkerd_cmd }}" # noqa: no-changed-when risky-shell-pipe
+    - name: "Linkerd control plane - {{ linkerd_cmd }}" # noqa: no-changed-when risky-shell-pipe
       ansible.builtin.shell:
         cmd: |
           set -o pipefail && {{ linkerd_bin }} {{ linkerd_cmd }} {{ linkerd_force }} \
@@ -114,6 +116,21 @@
             --identity-issuer-key-file {{ cert_dir }}/issuer-key.pem \
             | kubectl apply -f -
         executable: /bin/bash
+
+    - name: "Linkerd viz - {{ linkerd_cmd }}" # noqa: no-changed-when risky-shell-pipe
+      ansible.builtin.shell:
+        cmd: "set -o pipefail && {{ linkerd_bin }} viz {{ linkerd_cmd }} {{ linkerd_force }} | kubectl apply -f -"
+        executable: /bin/bash
+
+    - name: "Linkerd jaeger - {{ linkerd_cmd }}" # noqa: no-changed-when risky-shell-pipe
+      ansible.builtin.shell:
+        cmd: |
+          set -o pipefail && {{ linkerd_bin }} jaeger {{ linkerd_cmd }} {{ linkerd_force }} \
+            --set webhook.collectorTraceProtocol=opentelemetry \
+            | kubectl apply -f -
+        executable: /bin/bash
+
+    # --- Restart meshed pods so they pick up new trust bundle ---
 
     - name: Restart meshed pods with old trust bundles (upgrade only) # noqa: no-changed-when
       ansible.builtin.shell:
@@ -127,41 +144,14 @@
         executable: /bin/bash
       when: linkerd_ns.rc == 0
 
-    - name: Wait for Linkerd to be ready
-      ansible.builtin.command: "{{ linkerd_bin }} check"
-      retries: 20
-      delay: 15
-      register: linkerd_install_check
-      until: linkerd_install_check.rc == 0
-      changed_when: false
+    # --- Single validation pass after everything is applied ---
 
-    - name: "Linkerd viz - {{ linkerd_cmd }}" # noqa: no-changed-when risky-shell-pipe
-      ansible.builtin.shell:
-        cmd: "set -o pipefail && {{ linkerd_bin }} viz {{ linkerd_cmd }} {{ linkerd_force }} | kubectl apply -f -"
-        executable: /bin/bash
-
-    - name: Wait for viz to be ready
-      ansible.builtin.command: "{{ linkerd_bin }} viz check"
-      retries: 20
-      delay: 15
-      register: viz_check
-      until: viz_check.rc == 0
-      changed_when: false
-
-    - name: "Linkerd jaeger - {{ linkerd_cmd }}" # noqa: no-changed-when risky-shell-pipe
-      ansible.builtin.shell:
-        cmd: |
-          set -o pipefail && {{ linkerd_bin }} jaeger {{ linkerd_cmd }} {{ linkerd_force }} \
-            --set webhook.collectorTraceProtocol=opentelemetry \
-            | kubectl apply -f -
-        executable: /bin/bash
-
-    - name: Wait for jaeger to be ready
-      ansible.builtin.command: "{{ linkerd_bin }} jaeger check"
-      retries: 20
-      delay: 15
-      register: jaeger_check
-      until: jaeger_check.rc == 0
+    - name: Wait for Linkerd to be fully ready
+      ansible.builtin.command: "{{ linkerd_bin }} check --wait 10m"
+      retries: 3
+      delay: 30
+      register: linkerd_final_check
+      until: linkerd_final_check.rc == 0
       changed_when: false
 
     - name: Display certificate expiry dates
