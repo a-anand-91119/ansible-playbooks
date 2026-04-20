@@ -95,15 +95,19 @@
       changed_when: false
       when: linkerd_ns.rc != 0
 
-    - name: Install Linkerd CRDs # noqa: no-changed-when risky-shell-pipe
+    - name: Set linkerd command (install or upgrade)
+      ansible.builtin.set_fact:
+        linkerd_cmd: "{{ 'upgrade' if linkerd_ns.rc == 0 else 'install' }}"
+
+    - name: "Linkerd CRDs - {{ linkerd_cmd }}" # noqa: no-changed-when risky-shell-pipe
       ansible.builtin.shell:
-        cmd: "set -o pipefail && {{ linkerd_bin }} install --crds | kubectl apply -f -"
+        cmd: "set -o pipefail && {{ linkerd_bin }} {{ linkerd_cmd }} --crds | kubectl apply -f -"
         executable: /bin/bash
 
-    - name: Install Linkerd control plane with custom certificates # noqa: no-changed-when risky-shell-pipe
+    - name: "Linkerd control plane with custom certificates - {{ linkerd_cmd }}" # noqa: no-changed-when risky-shell-pipe
       ansible.builtin.shell:
         cmd: |
-          set -o pipefail && {{ linkerd_bin }} install \
+          set -o pipefail && {{ linkerd_bin }} {{ linkerd_cmd }} \
             --identity-trust-anchors-file {{ cert_dir }}/ca-cert.pem \
             --identity-issuer-certificate-file {{ cert_dir }}/issuer-cert.pem \
             --identity-issuer-key-file {{ cert_dir }}/issuer-key.pem \
