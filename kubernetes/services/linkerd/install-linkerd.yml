@@ -117,15 +117,15 @@
             | kubectl apply -f -
         executable: /bin/bash
 
-    - name: "Linkerd viz - {{ linkerd_cmd }}" # noqa: no-changed-when risky-shell-pipe
+    - name: Linkerd viz install # noqa: no-changed-when risky-shell-pipe
       ansible.builtin.shell:
-        cmd: "set -o pipefail && {{ linkerd_bin }} viz {{ linkerd_cmd }} {{ linkerd_force }} | kubectl apply -f -"
+        cmd: "set -o pipefail && {{ linkerd_bin }} viz install | kubectl apply -f -"
         executable: /bin/bash
 
-    - name: "Linkerd jaeger - {{ linkerd_cmd }}" # noqa: no-changed-when risky-shell-pipe
+    - name: Linkerd jaeger install # noqa: no-changed-when risky-shell-pipe
       ansible.builtin.shell:
         cmd: |
-          set -o pipefail && {{ linkerd_bin }} jaeger {{ linkerd_cmd }} {{ linkerd_force }} \
+          set -o pipefail && {{ linkerd_bin }} jaeger install \
             --set webhook.collectorTraceProtocol=opentelemetry \
             | kubectl apply -f -
         executable: /bin/bash
