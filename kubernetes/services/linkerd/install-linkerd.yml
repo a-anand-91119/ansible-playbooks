@@ -84,9 +84,16 @@
       args:
         creates: "{{ cert_dir }}/issuer-cert.pem"
 
-    - name: Check Linkerd prerequisites
+    - name: Check if Linkerd is already installed
+      ansible.builtin.command: kubectl get namespace linkerd
+      register: linkerd_ns
+      changed_when: false
+      failed_when: false
+
+    - name: Check Linkerd prerequisites (fresh install only)
       ansible.builtin.command: "{{ linkerd_bin }} check --pre"
       changed_when: false
+      when: linkerd_ns.rc != 0
 
     - name: Install Linkerd CRDs # noqa: no-changed-when risky-shell-pipe
       ansible.builtin.shell:
