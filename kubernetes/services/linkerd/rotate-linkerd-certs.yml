@@ -71,38 +71,44 @@
             -extensions v3_intermediate_ca
       when: cert_check.rc != 0
 
-    - name: Update issuer secret in Kubernetes # noqa: no-changed-when risky-shell-pipe
+    - name: Upgrade Linkerd control plane with new certificates # noqa: no-changed-when risky-shell-pipe
       ansible.builtin.shell:
         cmd: |
-          set -o pipefail && kubectl create secret generic linkerd-identity-issuer \
-            -n linkerd \
-            --from-file=ca.crt={{ cert_dir }}/ca-cert.pem \
-            --from-file=crt.pem={{ cert_dir }}/issuer-cert.pem \
-            --from-file=key.pem={{ cert_dir }}/issuer-key.pem \
-            --dry-run=client -o yaml | kubectl apply -f -
+          set -o pipefail && {{ linkerd_bin }} upgrade --force \
+            --identity-trust-anchors-file {{ cert_dir }}/ca-cert.pem \
+            --identity-issuer-certificate-file {{ cert_dir }}/issuer-cert.pem \
+            --identity-issuer-key-file {{ cert_dir }}/issuer-key.pem \
+            | kubectl apply -f -
         executable: /bin/bash
       when: cert_check.rc != 0
 
-    - name: Restart linkerd-identity # noqa: no-changed-when
-      ansible.builtin.command: kubectl rollout restart deploy -n linkerd linkerd-identity
-      when: cert_check.rc != 0
-
-    - name: Wait for linkerd-identity to be ready # noqa: no-changed-when
-      ansible.builtin.command: kubectl rollout status deploy -n linkerd linkerd-identity --timeout=120s
-      when: cert_check.rc != 0
-
-    - name: Restart linkerd-destination and proxy-injector # noqa: no-changed-when
-      ansible.builtin.command: >
-        kubectl rollout restart deploy -n linkerd
-        linkerd-destination linkerd-proxy-injector
-      when: cert_check.rc != 0
-
-    - name: Wait for all linkerd pods to be ready
+    - name: Wait for Linkerd control plane to be ready
       ansible.builtin.command: "{{ linkerd_bin }} check"
-      retries: 10
+      retries: 20
       delay: 15
       register: linkerd_check
       until: linkerd_check.rc == 0
+      changed_when: false
+      when: cert_check.rc != 0
+
+    - name: Restart meshed pods to pick up new trust bundle # noqa: no-changed-when
+      ansible.builtin.shell:
+        cmd: |
+          set -o pipefail && kubectl get pods --all-namespaces \
+            -l linkerd.io/control-plane-ns=linkerd \
+            -o jsonpath='{range .items[*]}{.metadata.namespace}{" "}{.metadata.name}{"\n"}{end}' \
+            | while read -r ns pod; do
+                kubectl delete pod -n "$ns" "$pod" --grace-period=30 2>/dev/null || true
+              done
+        executable: /bin/bash
+      when: cert_check.rc != 0
+
+    - name: Wait for all pods to stabilize after restart
+      ansible.builtin.command: "{{ linkerd_bin }} check"
+      retries: 20
+      delay: 15
+      register: final_check
+      until: final_check.rc == 0
       changed_when: false
       when: cert_check.rc != 0
 

@@ -90,62 +90,75 @@
       changed_when: false
       failed_when: false
 
+    - name: Set linkerd command (install or upgrade)
+      ansible.builtin.set_fact:
+        linkerd_cmd: "{{ 'upgrade' if linkerd_ns.rc == 0 else 'install' }}"
+        linkerd_force: "{{ '--force' if linkerd_ns.rc == 0 else '' }}"
+
     - name: Check Linkerd prerequisites (fresh install only)
       ansible.builtin.command: "{{ linkerd_bin }} check --pre"
       changed_when: false
       when: linkerd_ns.rc != 0
 
-    - name: Set linkerd command (install or upgrade)
-      ansible.builtin.set_fact:
-        linkerd_cmd: "{{ 'upgrade' if linkerd_ns.rc == 0 else 'install' }}"
-
     - name: "Linkerd CRDs - {{ linkerd_cmd }}" # noqa: no-changed-when risky-shell-pipe
       ansible.builtin.shell:
-        cmd: "set -o pipefail && {{ linkerd_bin }} {{ linkerd_cmd }} --crds | kubectl apply -f -"
+        cmd: "set -o pipefail && {{ linkerd_bin }} {{ linkerd_cmd }} --crds {{ linkerd_force }} | kubectl apply -f -"
         executable: /bin/bash
 
     - name: "Linkerd control plane with custom certificates - {{ linkerd_cmd }}" # noqa: no-changed-when risky-shell-pipe
       ansible.builtin.shell:
         cmd: |
-          set -o pipefail && {{ linkerd_bin }} {{ linkerd_cmd }} \
+          set -o pipefail && {{ linkerd_bin }} {{ linkerd_cmd }} {{ linkerd_force }} \
             --identity-trust-anchors-file {{ cert_dir }}/ca-cert.pem \
             --identity-issuer-certificate-file {{ cert_dir }}/issuer-cert.pem \
             --identity-issuer-key-file {{ cert_dir }}/issuer-key.pem \
             | kubectl apply -f -
         executable: /bin/bash
 
-    - name: Wait for Linkerd installation to be ready
+    - name: Restart meshed pods with old trust bundles (upgrade only) # noqa: no-changed-when
+      ansible.builtin.shell:
+        cmd: |
+          set -o pipefail && kubectl get pods --all-namespaces \
+            -l linkerd.io/control-plane-ns=linkerd \
+            -o jsonpath='{range .items[*]}{.metadata.namespace}{" "}{.metadata.name}{"\n"}{end}' \
+            | while read -r ns pod; do
+                kubectl delete pod -n "$ns" "$pod" --grace-period=30 2>/dev/null || true
+              done
+        executable: /bin/bash
+      when: linkerd_ns.rc == 0
+
+    - name: Wait for Linkerd to be ready
       ansible.builtin.command: "{{ linkerd_bin }} check"
-      retries: 5
+      retries: 20
       delay: 15
       register: linkerd_install_check
       until: linkerd_install_check.rc == 0
       changed_when: false
 
-    - name: Install viz extension # noqa: no-changed-when risky-shell-pipe
+    - name: "Linkerd viz - {{ linkerd_cmd }}" # noqa: no-changed-when risky-shell-pipe
       ansible.builtin.shell:
-        cmd: "set -o pipefail && {{ linkerd_bin }} viz install | kubectl apply -f -"
+        cmd: "set -o pipefail && {{ linkerd_bin }} viz {{ linkerd_cmd }} {{ linkerd_force }} | kubectl apply -f -"
         executable: /bin/bash
 
     - name: Wait for viz to be ready
       ansible.builtin.command: "{{ linkerd_bin }} viz check"
-      retries: 5
+      retries: 20
       delay: 15
       register: viz_check
       until: viz_check.rc == 0
       changed_when: false
 
-    - name: Install jaeger extension # noqa: no-changed-when risky-shell-pipe
+    - name: "Linkerd jaeger - {{ linkerd_cmd }}" # noqa: no-changed-when risky-shell-pipe
       ansible.builtin.shell:
         cmd: |
-          set -o pipefail && {{ linkerd_bin }} jaeger install \
+          set -o pipefail && {{ linkerd_bin }} jaeger {{ linkerd_cmd }} {{ linkerd_force }} \
             --set webhook.collectorTraceProtocol=opentelemetry \
             | kubectl apply -f -
         executable: /bin/bash
 
     - name: Wait for jaeger to be ready
       ansible.builtin.command: "{{ linkerd_bin }} jaeger check"
-      retries: 5
+      retries: 20
       delay: 15
       register: jaeger_check
       until: jaeger_check.rc == 0
