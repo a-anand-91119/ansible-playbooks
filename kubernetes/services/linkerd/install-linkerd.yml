@@ -1,14 +1,18 @@
 ---
 - name: Install Linkerd CLI and Setup on Kubernetes Cluster
   hosts: jump_server
+  vars:
+    linkerd_bin: "{{ ansible_env.HOME }}/.linkerd2/bin/linkerd"
+    cert_dir: "{{ ansible_env.HOME }}/linkerd-certs"
+    trust_anchor_validity_days: 3650
+    issuer_validity_days: 365
+
   tasks:
-    - name: Download and install Linkerd CLI
+    - name: Download and install Linkerd CLI # noqa: command-instead-of-module risky-shell-pipe
       ansible.builtin.shell: |
         curl --proto '=https' --tlsv1.2 -sSfL https://run.linkerd.io/install-edge | sh
       args:
-        creates: "{{ ansible_env.HOME }}/.linkerd2/bin/linkerd"
-      environment:
-        PATH: "{{ ansible_env.HOME }}/.linkerd2/bin:{{ ansible_env.PATH }}"
+        creates: "{{ linkerd_bin }}"
 
     - name: Add Linkerd CLI to PATH permanently
       ansible.builtin.lineinfile:
@@ -17,42 +21,135 @@
         line: export PATH=$HOME/.linkerd2/bin:$PATH
         state: present
 
-    - name: Add Linkerd CLI to PATH for the current session
-      ansible.builtin.shell: export PATH=$HOME/.linkerd2/bin:$PATH
-
     - name: Verify Linkerd CLI installation
-      ansible.builtin.shell: $HOME/.linkerd2/bin/linkerd version
+      ansible.builtin.command: "{{ linkerd_bin }} version --client"
       register: linkerd_version_output
-      failed_when: "'Server version: unavailable' not in linkerd_version_output.stdout"
+      changed_when: false
 
-    - name: Check if Linkerd prerequisites are met in the Kubernetes cluster
-      ansible.builtin.shell: $HOME/.linkerd2/bin/linkerd check --pre
-      register: linkerd_check_output
-      failed_when: "'Status check results are' not in linkerd_check_output.stdout"
+    - name: Create certificate directory
+      ansible.builtin.file:
+        path: "{{ cert_dir }}"
+        state: directory
+        mode: "0700"
 
-    - name: Install Linkerd CRDs
-      ansible.builtin.shell: $HOME/.linkerd2/bin/linkerd install --crds | kubectl apply -f -
+    - name: Generate trust anchor CA key
+      ansible.builtin.shell: |
+        openssl ecparam -name prime256v1 -genkey -noout -out {{ cert_dir }}/ca-key.pem
+      args:
+        creates: "{{ cert_dir }}/ca-key.pem"
 
-    - name: Install Linkerd control plane
-      ansible.builtin.shell: $HOME/.linkerd2/bin/linkerd install | kubectl apply -f -
+    - name: Generate trust anchor CA certificate (10 years)
+      ansible.builtin.shell: |
+        openssl req -x509 -new -nodes \
+          -key {{ cert_dir }}/ca-key.pem \
+          -sha256 -days {{ trust_anchor_validity_days }} \
+          -out {{ cert_dir }}/ca-cert.pem \
+          -subj "/CN=root.linkerd.cluster.local"
+      args:
+        creates: "{{ cert_dir }}/ca-cert.pem"
+
+    - name: Create issuer extensions config
+      ansible.builtin.copy:
+        dest: "{{ cert_dir }}/issuer-ext.cnf"
+        mode: "0600"
+        content: |
+          [v3_intermediate_ca]
+          basicConstraints = critical, CA:true, pathlen:0
+          keyUsage = critical, digitalSignature, cRLSign, keyCertSign
+          subjectKeyIdentifier = hash
+          authorityKeyIdentifier = keyid:always
+
+    - name: Generate issuer key
+      ansible.builtin.shell: |
+        openssl ecparam -name prime256v1 -genkey -noout -out {{ cert_dir }}/issuer-key.pem
+      args:
+        creates: "{{ cert_dir }}/issuer-key.pem"
+
+    - name: Generate issuer certificate (1 year)
+      ansible.builtin.shell: |
+        openssl req -new \
+          -key {{ cert_dir }}/issuer-key.pem \
+          -out {{ cert_dir }}/issuer-csr.pem \
+          -subj "/CN=identity.linkerd.cluster.local" && \
+        openssl x509 -req \
+          -in {{ cert_dir }}/issuer-csr.pem \
+          -CA {{ cert_dir }}/ca-cert.pem \
+          -CAkey {{ cert_dir }}/ca-key.pem \
+          -CAcreateserial \
+          -out {{ cert_dir }}/issuer-cert.pem \
+          -days {{ issuer_validity_days }} \
+          -sha256 \
+          -extfile {{ cert_dir }}/issuer-ext.cnf \
+          -extensions v3_intermediate_ca
+      args:
+        creates: "{{ cert_dir }}/issuer-cert.pem"
+
+    - name: Check Linkerd prerequisites
+      ansible.builtin.command: "{{ linkerd_bin }} check --pre"
+      changed_when: false
+
+    - name: Install Linkerd CRDs # noqa: no-changed-when risky-shell-pipe
+      ansible.builtin.shell:
+        cmd: "set -o pipefail && {{ linkerd_bin }} install --crds | kubectl apply -f -"
+        executable: /bin/bash
+
+    - name: Install Linkerd control plane with custom certificates # noqa: no-changed-when risky-shell-pipe
+      ansible.builtin.shell:
+        cmd: |
+          set -o pipefail && {{ linkerd_bin }} install \
+            --identity-trust-anchors-file {{ cert_dir }}/ca-cert.pem \
+            --identity-issuer-certificate-file {{ cert_dir }}/issuer-cert.pem \
+            --identity-issuer-key-file {{ cert_dir }}/issuer-key.pem \
+            | kubectl apply -f -
+        executable: /bin/bash
 
     - name: Wait for Linkerd installation to be ready
-      ansible.builtin.shell: $HOME/.linkerd2/bin/linkerd check
-      register: linkerd_install_check_output
-      failed_when: "'Status check results are' not in linkerd_install_check_output.stdout"
+      ansible.builtin.command: "{{ linkerd_bin }} check"
+      retries: 5
+      delay: 15
+      register: linkerd_install_check
+      until: linkerd_install_check.rc == 0
+      changed_when: false
 
-    - name: Install viz extension
-      ansible.builtin.shell: $HOME/.linkerd2/bin/linkerd viz install | kubectl apply -f -
+    - name: Install viz extension # noqa: no-changed-when risky-shell-pipe
+      ansible.builtin.shell:
+        cmd: "set -o pipefail && {{ linkerd_bin }} viz install | kubectl apply -f -"
+        executable: /bin/bash
 
-    - name: Wait for Linkerd Viz installation to be ready
-      ansible.builtin.shell: $HOME/.linkerd2/bin/linkerd check
-      register: linkerd_viz_install_check_output
-      failed_when: "'Status check results are' not in linkerd_install_check_output.stdout"
+    - name: Wait for viz to be ready
+      ansible.builtin.command: "{{ linkerd_bin }} viz check"
+      retries: 5
+      delay: 15
+      register: viz_check
+      until: viz_check.rc == 0
+      changed_when: false
 
-    - name: Install jaeger extension
-      ansible.builtin.shell: $HOME/.linkerd2/bin/linkerd jaeger install --set webhook.collectorTraceProtocol=opentelemetry | kubectl apply -f
+    - name: Install jaeger extension # noqa: no-changed-when risky-shell-pipe
+      ansible.builtin.shell:
+        cmd: |
+          set -o pipefail && {{ linkerd_bin }} jaeger install \
+            --set webhook.collectorTraceProtocol=opentelemetry \
+            | kubectl apply -f -
+        executable: /bin/bash
 
-    - name: Wait for Jaeger installation to be ready
-      ansible.builtin.shell: $HOME/.linkerd2/bin/linkerd jaeger check
-      register: linkerd_jaeger_install_check_output
-      failed_when: "'Status check results are' not in linkerd_install_check_output.stdout"
+    - name: Wait for jaeger to be ready
+      ansible.builtin.command: "{{ linkerd_bin }} jaeger check"
+      retries: 5
+      delay: 15
+      register: jaeger_check
+      until: jaeger_check.rc == 0
+      changed_when: false
+
+    - name: Display certificate expiry dates
+      ansible.builtin.shell:
+        cmd: |
+          echo "=== Trust Anchor CA ===" && \
+          openssl x509 -noout -dates -in {{ cert_dir }}/ca-cert.pem && \
+          echo "=== Issuer Certificate ===" && \
+          openssl x509 -noout -dates -in {{ cert_dir }}/issuer-cert.pem
+      register: cert_dates
+      changed_when: false
+
+    - name: Show certificate info
+      ansible.builtin.debug:
+        var: cert_dates.stdout_lines

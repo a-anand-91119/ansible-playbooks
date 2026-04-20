@@ -1,0 +1,126 @@
+---
+- name: Rotate Linkerd Issuer Certificate
+  hosts: jump_server
+  vars:
+    linkerd_bin: "{{ ansible_env.HOME }}/.linkerd2/bin/linkerd"
+    cert_dir: "{{ ansible_env.HOME }}/linkerd-certs"
+    issuer_validity_days: 365
+    expiry_threshold_days: 30
+
+  tasks:
+    - name: Check current issuer certificate expiry # noqa: risky-shell-pipe
+      ansible.builtin.shell:
+        cmd: "set -o pipefail && openssl x509 -noout -enddate -in {{ cert_dir }}/issuer-cert.pem 2>/dev/null | cut -d= -f2"
+        executable: /bin/bash
+      register: current_expiry
+      changed_when: false
+      failed_when: false
+
+    - name: Check if certificate expires within threshold
+      ansible.builtin.command: >
+        openssl x509 -checkend {{ expiry_threshold_days * 86400 }}
+        -noout -in {{ cert_dir }}/issuer-cert.pem
+      register: cert_check
+      changed_when: false
+      failed_when: false
+
+    - name: Display current certificate status
+      ansible.builtin.debug:
+        msg: >-
+          Current issuer cert expires: {{ current_expiry.stdout | default('NOT FOUND') }}.
+          {{ 'ROTATION NEEDED' if cert_check.rc != 0 else 'Certificate is still valid beyond threshold' }}.
+
+    - name: Backup current issuer certificate
+      ansible.builtin.copy:
+        src: "{{ cert_dir }}/issuer-cert.pem"
+        dest: "{{ cert_dir }}/issuer-cert.pem.bak.{{ ansible_date_time.iso8601_basic_short }}"
+        remote_src: true
+        mode: "0600"
+      when: cert_check.rc != 0
+
+    - name: Backup current issuer key
+      ansible.builtin.copy:
+        src: "{{ cert_dir }}/issuer-key.pem"
+        dest: "{{ cert_dir }}/issuer-key.pem.bak.{{ ansible_date_time.iso8601_basic_short }}"
+        remote_src: true
+        mode: "0600"
+      when: cert_check.rc != 0
+
+    - name: Generate new issuer key # noqa: no-changed-when
+      ansible.builtin.command: >
+        openssl ecparam -name prime256v1 -genkey -noout
+        -out {{ cert_dir }}/issuer-key.pem
+      when: cert_check.rc != 0
+
+    - name: Generate new issuer certificate # noqa: no-changed-when
+      ansible.builtin.shell:
+        cmd: |
+          openssl req -new \
+            -key {{ cert_dir }}/issuer-key.pem \
+            -out {{ cert_dir }}/issuer-csr.pem \
+            -subj "/CN=identity.linkerd.cluster.local" && \
+          openssl x509 -req \
+            -in {{ cert_dir }}/issuer-csr.pem \
+            -CA {{ cert_dir }}/ca-cert.pem \
+            -CAkey {{ cert_dir }}/ca-key.pem \
+            -CAcreateserial \
+            -out {{ cert_dir }}/issuer-cert.pem \
+            -days {{ issuer_validity_days }} \
+            -sha256 \
+            -extfile {{ cert_dir }}/issuer-ext.cnf \
+            -extensions v3_intermediate_ca
+      when: cert_check.rc != 0
+
+    - name: Update issuer secret in Kubernetes # noqa: no-changed-when risky-shell-pipe
+      ansible.builtin.shell:
+        cmd: |
+          set -o pipefail && kubectl create secret generic linkerd-identity-issuer \
+            -n linkerd \
+            --from-file=ca.crt={{ cert_dir }}/ca-cert.pem \
+            --from-file=crt.pem={{ cert_dir }}/issuer-cert.pem \
+            --from-file=key.pem={{ cert_dir }}/issuer-key.pem \
+            --dry-run=client -o yaml | kubectl apply -f -
+        executable: /bin/bash
+      when: cert_check.rc != 0
+
+    - name: Restart linkerd-identity # noqa: no-changed-when
+      ansible.builtin.command: kubectl rollout restart deploy -n linkerd linkerd-identity
+      when: cert_check.rc != 0
+
+    - name: Wait for linkerd-identity to be ready # noqa: no-changed-when
+      ansible.builtin.command: kubectl rollout status deploy -n linkerd linkerd-identity --timeout=120s
+      when: cert_check.rc != 0
+
+    - name: Restart linkerd-destination and proxy-injector # noqa: no-changed-when
+      ansible.builtin.command: >
+        kubectl rollout restart deploy -n linkerd
+        linkerd-destination linkerd-proxy-injector
+      when: cert_check.rc != 0
+
+    - name: Wait for all linkerd pods to be ready
+      ansible.builtin.command: "{{ linkerd_bin }} check"
+      retries: 10
+      delay: 15
+      register: linkerd_check
+      until: linkerd_check.rc == 0
+      changed_when: false
+      when: cert_check.rc != 0
+
+    - name: Display new certificate expiry
+      ansible.builtin.shell:
+        cmd: |
+          echo "=== New Issuer Certificate ===" && \
+          openssl x509 -noout -dates -in {{ cert_dir }}/issuer-cert.pem
+      register: new_cert_dates
+      changed_when: false
+      when: cert_check.rc != 0
+
+    - name: Show new certificate info
+      ansible.builtin.debug:
+        var: new_cert_dates.stdout_lines
+      when: cert_check.rc != 0
+
+    - name: Skip message
+      ansible.builtin.debug:
+        msg: "No rotation needed. Issuer cert is valid beyond {{ expiry_threshold_days }} days."
+      when: cert_check.rc == 0
